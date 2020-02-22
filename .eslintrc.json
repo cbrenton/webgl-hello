@@ -15,5 +15,12 @@
         "ecmaVersion": 2018
     },
     "rules": {
+      "comma-dangle": ["error", {
+        "arrays": "always",
+        "objects": "always",
+        "imports": "never",
+        "exports": "never",
+        "functions": "never"
+      }]
     }
 }
