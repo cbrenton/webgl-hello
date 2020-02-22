@@ -19,7 +19,7 @@ window.onload = function () {
       window.alert("Couldn't get WebGL context");
     }
     gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(1, 1, 1, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
     return gl;
   }
 
@@ -45,11 +45,6 @@ window.onload = function () {
       colors,
       vertexBuffer,
       colorBuffer;
-    var size = 2; // 2 components per iteration
-    var type = gl.FLOAT; // the data is 32 bit floats
-    var normalize = false; // don't normalize the data
-    var stride = 0; // 0 =  move forward size * sizeof(type) each iteration to get the next element
-    var offset = 0; // start at the beginning of the buffer
 
     vertices = new Float32Array([
       0, 0.3,
@@ -69,7 +64,7 @@ window.onload = function () {
 
     const positionLoc = gl.getAttribLocation(program, 'a_position');
     // Tell the attribute how to get data out of positionBuffer
-    gl.vertexAttribPointer(positionLoc, size, type, normalize, stride, offset);
+    gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(positionLoc);
 
     colorBuffer = gl.createBuffer();
@@ -77,6 +72,7 @@ window.onload = function () {
     gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
 
     const colorLoc = gl.getAttribLocation(program, 'a_color');
+    // Tell the attribute how to get data out of colorBuffer
     gl.vertexAttribPointer(colorLoc, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(colorLoc);
 
@@ -107,5 +103,4 @@ window.onload = function () {
     console.log(gl.getProgramInfoLog(program));
     gl.deleteProgram(program);
   }
-}
-;
+};
