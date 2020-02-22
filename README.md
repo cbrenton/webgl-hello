@@ -1,2 +1,42 @@
 # webgl-hello
-Hello world exercises for WebGL.
+Hello world exercises for WebGL
+
+## Scene 1
+### Create a scene with a single triangle.
+- [ ] The triangle should be centered in camera/clip space, with a side length of 0.6.
+- [ ] It should have one red corner, one blue corner, and one green corner, and interpolate color between them.
+- [ ] The scene must utilize an ortholinear projection matrix.
+- [ ] Try moving the triangle and the projection matrix together and separately.
+
+## Scene 2
+### Create a scene with a single triangle with perspective view.
+- [ ] Recreate scene 1 with a perspective projection matrix.
+
+## Scene 3
+### Create a scene with a rotating cube.
+- [ ] The scene must utilize a perspective projection matrix.
+- [ ] No lighting or shadows are required.
+- [ ] Each face of the cube must be a different color.
+
+## Scene 4
+### Create a scene with a rotating cube, a single light, and a plane.
+- [ ] This scene should demonstrate simple diffuse lighting.
+- [ ] This scene should not display shadows.
+- [ ] The cube should have the same material for all faces.
+
+## Scene 5
+### Create a scene with a rotating cube, a single light, and a plane.
+- [ ] This scene should demonstrate simple diffuse lighting.
+- [ ] The scene should display accurate shadows via shadow mapping.
+
+## Scene 6
+### Create a scene with bunny.obj and a plane and a single light.
+- [ ] This scene should demonstrate phong lighting (interpolated normals).
+- [ ] The scene should have accurate shadows via shadow mapping.
+- [ ] The plane should be texture mapped.
+
+## Scene 7 (stretch goal)
+### Create a scene with bunny.obj, a plane, and 2 lights
+- [ ] This scene should have 2 lights.
+- [ ] The scene should have accurate shadows via shadow mapping.
+- [ ] The plane should be texture mapped.
