@@ -1,6 +1,6 @@
 'use strict';
 
-import { Matrix3 } from 'math.gl';
+import { Matrix4 } from 'math.gl';
 
 window.onload = function () {
   var gl,
@@ -49,9 +49,9 @@ window.onload = function () {
       colorBuffer;
 
     vertices = new Float32Array([
-      0, 0.3,
-      -0.3, -0.3,
-      0.3, -0.3,
+      0, 0.3, 0.0,
+      -0.3, -0.3, 0.0,
+      0.3, -0.3, 0.0,
     ]);
 
     colors = new Float32Array([
@@ -66,7 +66,7 @@ window.onload = function () {
 
     const positionLoc = gl.getAttribLocation(program, 'a_position');
     // Tell the attribute how to get data out of positionBuffer
-    gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(positionLoc);
 
     colorBuffer = gl.createBuffer();
@@ -100,8 +100,8 @@ window.onload = function () {
     var offset = 0;
     var count = 3;
 
-    var viewMatrix = new Matrix3();
-    //mat3.fromTranslation(viewMatrix, new vec2(0.5, 0));
+    var viewMatrix = new Matrix4().identity();
+    viewMatrix.translate([0.5, 0, 0]);
     console.log(viewMatrix);
 
     gl.drawArrays(primitiveType, offset, count);
@@ -109,4 +109,4 @@ window.onload = function () {
     console.log(gl.getProgramInfoLog(program));
     gl.deleteProgram(program);
   }
-}
+};
