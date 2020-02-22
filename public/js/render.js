@@ -48,9 +48,9 @@ window.onload = function () {
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
   // three 2d points
   var positions = [
-    0, 0,
-    0, 0.5,
-    0.7, 0,
+    0, 0.3,
+    -0.3, -0.3,
+    0.3, -0.3,
   ];
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
