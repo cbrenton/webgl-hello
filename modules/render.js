@@ -100,9 +100,11 @@ window.onload = function () {
     var offset = 0;
     var count = 3;
 
-    var viewMatrix = new Matrix4().identity();
-    viewMatrix.translate([0.5, 0, 0]);
-    console.log(viewMatrix);
+    var modelMatrix = new Matrix4().identity();
+    modelMatrix.translate([0.5, 0, 0]);
+
+    const modelMatrixLocation = gl.getUniformLocation(program, 'u_model_matrix');
+    gl.uniformMatrix4fv(modelMatrixLocation, false, modelMatrix);
 
     gl.drawArrays(primitiveType, offset, count);
 
