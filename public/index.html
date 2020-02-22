@@ -1,0 +1,40 @@
+<!doctype html>
+<html class="no-js" lang="">
+
+<head>
+  <meta charset="utf-8">
+  <title>WebGL is cool</title>
+  <script src="js/webgl-utils.js"></script>
+  <script id="vertShader" type="notjs">
+// an attribute will receive data from a buffer
+attribute vec4 a_position;
+
+// all shaders have a main function
+void main() {
+  // gl_Position is a special var that a vertex shader is
+  // responsible for setting
+  gl_Position = a_position;
+}
+  </script>
+
+  <script id="fragShader" type="notjs">
+// fragment shaders don't have a default precision so we need to
+// pick one. mediump is a good default. it means "medium precision"
+precision mediump float;
+
+void main() {
+  // gl_FragColor is a special var that a frag shader is responsible
+  // for setting
+  gl_FragColor = vec4(1, 0, 0.5, 1); // reddish-purple
+}
+  </script>
+
+  <script src="js/render.js" type="text/javascript"></script>
+</head>
+
+<body>
+  <!-- Add your site or application content here -->
+  <canvas id="c" style="border:1px solid black;"></canvas>
+</body>
+
+</html>
