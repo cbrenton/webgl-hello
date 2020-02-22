@@ -1,5 +1,7 @@
 'use strict';
 
+import { Matrix3 } from 'math.gl';
+
 window.onload = function () {
   var gl,
     shaderProgram;
@@ -98,9 +100,13 @@ window.onload = function () {
     var offset = 0;
     var count = 3;
 
+    var viewMatrix = new Matrix3();
+    //mat3.fromTranslation(viewMatrix, new vec2(0.5, 0));
+    console.log(viewMatrix);
+
     gl.drawArrays(primitiveType, offset, count);
 
     console.log(gl.getProgramInfoLog(program));
     gl.deleteProgram(program);
   }
-};
+}
