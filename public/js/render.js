@@ -67,20 +67,15 @@ window.onload = function () {
 
   function getShader (gl, type, shaderId) {
     var shader,
-      source,
-      success;
+      source;
 
     shader = gl.createShader(type);
     source = document.getElementById(shaderId).text;
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
-    success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-    if (success) {
-      return shader;
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      throw new Error(gl.getShaderInfoLog(shader));
     }
-
-    console.log(gl.getShaderInfoLog(shader));
-    gl.deleteShader(shader);
     return shader;
   }
 
