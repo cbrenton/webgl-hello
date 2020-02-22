@@ -4,7 +4,7 @@ Hello world exercises for WebGL
 ## Scene 1
 ### Create a scene with a single triangle.
 - [x] The triangle should be centered in camera/clip space, with a side length of 0.6.
-- [ ] It should have one red corner, one blue corner, and one green corner, and interpolate color between them.
+- [x] It should have one red corner, one blue corner, and one green corner, and interpolate color between them.
 - [ ] The scene must utilize an ortholinear projection matrix.
 - [ ] Try moving the triangle and the projection matrix together and separately.
 

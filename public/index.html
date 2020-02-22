@@ -8,12 +8,15 @@
   <script id="vertShader" type="notjs">
 // an attribute will receive data from a buffer
 attribute vec4 a_position;
+attribute vec4 a_color;
+varying vec4 varying_color;
 
 // all shaders have a main function
 void main() {
   // gl_Position is a special var that a vertex shader is
   // responsible for setting
   gl_Position = a_position;
+  varying_color = a_color;
 }
   </script>
 
@@ -21,11 +24,12 @@ void main() {
 // fragment shaders don't have a default precision so we need to
 // pick one. mediump is a good default. it means "medium precision"
 precision mediump float;
+varying vec4 varying_color;
 
 void main() {
   // gl_FragColor is a special var that a frag shader is responsible
   // for setting
-  gl_FragColor = vec4(1, 0, 0.5, 1); // reddish-purple
+  gl_FragColor = varying_color;
 }
   </script>
 

@@ -4,7 +4,7 @@ window.onload = function () {
 
   gl = initGL();
   shaderProgram = createShaders(gl);
-  createVertices(gl, shaderProgram);
+  createVertexData(gl, shaderProgram);
   draw(gl, shaderProgram);
 
   function initGL () {
@@ -38,30 +38,46 @@ window.onload = function () {
     return shaderProgram;
   }
 
-  function createVertices (gl, program) {
+  function createVertexData (gl, program) {
     var vertices,
-      buffer,
-      coords;
+      colors,
+      vertexBuffer,
+      colorBuffer;
     var size = 2; // 2 components per iteration
     var type = gl.FLOAT; // the data is 32 bit floats
     var normalize = false; // don't normalize the data
     var stride = 0; // 0 =  move forward size * sizeof(type) each iteration to get the next element
     var offset = 0; // start at the beginning of the buffer
 
-    vertices = [
+    vertices = new Float32Array([
       0, 0.3,
       -0.3, -0.3,
-      0.3, -0.3
-    ];
+      0.3, -0.3,
+    ]);
 
-    buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    colors = new Float32Array([
+      1, 0, 0, 1,
+      0, 1, 0, 1,
+      0, 0, 1, 1,
+    ]);
 
-    coords = gl.getAttribLocation(program, 'a_position');
+    vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+    const positionLoc = gl.getAttribLocation(program, 'a_position');
     // Tell the attribute how to get data out of positionBuffer
-    gl.vertexAttribPointer(coords, size, type, normalize, stride, offset);
-    gl.enableVertexAttribArray(coords);
+    gl.vertexAttribPointer(positionLoc, size, type, normalize, stride, offset);
+    gl.enableVertexAttribArray(positionLoc);
+
+    colorBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
+
+    const colorLoc = gl.getAttribLocation(program, 'a_color');
+    gl.vertexAttribPointer(colorLoc, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(colorLoc);
+
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
   }
 
