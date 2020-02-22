@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <title>WebGL is cool</title>
   <script src="js/webgl-utils.js"></script>
-  <script id="vertShader" type="notjs">
+  <script id="vertShader" type="x-shader/x-vertex">
 // an attribute will receive data from a buffer
 attribute vec4 a_position;
 attribute vec4 a_color;
@@ -20,7 +20,7 @@ void main() {
 }
   </script>
 
-  <script id="fragShader" type="notjs">
+  <script id="fragShader" type="x-shader/x-fragment">
 // fragment shaders don't have a default precision so we need to
 // pick one. mediump is a good default. it means "medium precision"
 precision mediump float;
