@@ -1,21 +1,17 @@
 'use strict';
 
-import { Vector3, Matrix4 } from 'math.gl';
+import { Vector3, Vector4, Matrix4 } from 'math.gl';
 
 const vertShaderSource = `
 attribute vec4 a_position;
-attribute vec4 a_color;
 
 uniform mat4 u_model_matrix;
 uniform mat4 u_view_matrix;
 uniform mat4 u_proj_matrix;
 
-varying vec4 varying_color;
-
 void main() {
   // MVP matrix must be constructed in reverse
   gl_Position = u_proj_matrix * u_view_matrix * u_model_matrix * a_position;
-  varying_color = a_color;
 }
 `;
 
@@ -24,12 +20,12 @@ const fragShaderSource = `
 // pick one. mediump is a good default. it means "medium precision"
 precision mediump float;
 
-varying vec4 varying_color;
+uniform vec4 u_color;
 
 void main() {
   // gl_FragColor is a special var that a frag shader is responsible
   // for setting
-  gl_FragColor = varying_color;
+  gl_FragColor = u_color;
 }
 `;
 
@@ -76,7 +72,6 @@ function createShaders (gl) {
 
 function createVertexData (gl, program) {
   var vertexBuffer,
-    colorBuffer,
     indexBuffer;
 
   // Vertices will not be reused since we don't want interpolated colors
@@ -118,23 +113,6 @@ function createVertexData (gl, program) {
     -1.0, 1.0, -1.0,
   ]);
 
-  const faceColors = [
-    [1.0, 1.0, 1.0, 1.0], // Front face: white
-    [1.0, 0.0, 0.0, 1.0], // Back face: red
-    [0.0, 1.0, 0.0, 1.0], // Top face: green
-    [0.0, 0.0, 1.0, 1.0], // Bottom face: blue
-    [1.0, 1.0, 0.0, 1.0], // Right face: yellow
-    [1.0, 0.0, 1.0, 1.0], // Left face: purple
-  ];
-
-  // Make per-vertex colors for each face
-  var colorsArr = [];
-  for (var j = 0; j < faceColors.length; ++j) {
-    const c = faceColors[j];
-    colorsArr = colorsArr.concat(c, c, c, c);
-  }
-  const colors = new Float32Array(colorsArr);
-
   const indices = new Uint16Array([
     0, 1, 2, 0, 2, 3, // front
     4, 5, 6, 4, 6, 7, // back
@@ -153,22 +131,12 @@ function createVertexData (gl, program) {
   gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(positionLoc);
 
-  colorBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
-
-  const colorLoc = gl.getAttribLocation(program, 'a_color');
-  // Tell the attribute how to get data out of colorBuffer
-  gl.vertexAttribPointer(colorLoc, 4, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(colorLoc);
-
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
   // Set up index buffer
   indexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
-}
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW); }
 
 function getShader (gl, type, shaderSource) {
   var shader = gl.createShader(type);
@@ -184,6 +152,10 @@ function drawCube (gl, program, transform, viewMatrix, projMatrix) {
   var primitiveType = gl.TRIANGLES;
   var offset = 0;
   var count = 6 * 6;
+
+  const color = new Vector4(0.8, 0.6, 0.0, 1.0);
+  const colorLoc = gl.getUniformLocation(program, 'u_color');
+  gl.uniform4fv(colorLoc, color);
 
   // Model matrix
   const modelMatrixLocation = gl.getUniformLocation(program, 'u_model_matrix');
@@ -204,6 +176,10 @@ function drawPlane (gl, program, transform, viewMatrix, projMatrix) {
   var primitiveType = gl.TRIANGLES;
   var offset = 18;
   var count = 6;
+
+  const color = new Vector4(0.2, 0.2, 0.2, 1.0);
+  const colorLoc = gl.getUniformLocation(program, 'u_color');
+  gl.uniform4fv(colorLoc, color);
 
   // Model matrix
   const modelMatrixLocation = gl.getUniformLocation(program, 'u_model_matrix');
@@ -263,7 +239,7 @@ function draw (gl, program, timestamp) {
   // 3: then translate down and backwards to be centered underneath the cube
   planeTransform.translate([0, -3, -4]);
   // 2: scale to make it more like a plane
-  planeTransform.scale(10);
+  planeTransform.scale(100);
   // 1: offset in z dimension to match cube (so it doesn't fly off the screen when scaled)
   planeTransform.translate([0, 1, 0]);
 
