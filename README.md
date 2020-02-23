@@ -10,7 +10,7 @@ Hello world exercises for WebGL
 
 ## Scene 2
 ### Create a scene with a single triangle with perspective view.
-- [ ] Recreate scene 1 with a perspective projection matrix.
+- [x] Recreate scene 1 with a perspective projection matrix.
 
 ## Scene 3
 ### Create a scene with a rotating cube.
