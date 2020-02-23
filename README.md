@@ -14,9 +14,9 @@ Hello world exercises for WebGL
 
 ## Scene 3
 ### Create a scene with a rotating cube.
-- [ ] The scene must utilize a perspective projection matrix.
-- [ ] No lighting or shadows are required.
-- [ ] Each face of the cube must be a different color.
+- [x] The scene must utilize a perspective projection matrix.
+- [x] No lighting or shadows are required.
+- [x] Each face of the cube must be a different color.
 
 ## Scene 4
 ### Create a scene with a rotating cube, a single light, and a plane.
