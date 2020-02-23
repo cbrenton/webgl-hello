@@ -3,7 +3,7 @@ import resolve from 'rollup-plugin-node-resolve';
 import commonJS from 'rollup-plugin-commonjs';
 
 export default {
-  input: 'modules/render.js',
+  input: 'modules/main.js',
   output: {
     file: 'public/js/bundle.js',
     format: 'iife',

@@ -4,44 +4,18 @@
 <head>
   <meta charset="utf-8">
   <title>WebGL is cool</title>
-  <!--script src="js/webgl-utils.js"></script-->
-  <script id="vertShader" type="x-shader/x-vertex">
-attribute vec4 a_position;
-attribute vec4 a_color;
-
-uniform mat4 u_model_matrix;
-uniform mat4 u_view_matrix;
-uniform mat4 u_proj_matrix;
-
-varying vec4 varying_color;
-
-void main() {
-  // MVP matrix must be constructed in reverse
-  gl_Position = u_proj_matrix * u_view_matrix * u_model_matrix * a_position;
-  varying_color = a_color;
-}
-  </script>
-
-  <script id="fragShader" type="x-shader/x-fragment">
-// fragment shaders don't have a default precision so we need to
-// pick one. mediump is a good default. it means "medium precision"
-precision mediump float;
-
-varying vec4 varying_color;
-
-void main() {
-  // gl_FragColor is a special var that a frag shader is responsible
-  // for setting
-  gl_FragColor = varying_color;
-}
-  </script>
-
   <script src="js/bundle.js"></script>
 </head>
 
 <body>
   <!-- Add your site or application content here -->
-  <canvas id="c" style="border:1px solid black;"></canvas>
+  <canvas id="c1" style="border:1px solid black;"></canvas>
+  <canvas id="c2" style="border:1px solid black;"></canvas>
+  <canvas id="c3" style="border:1px solid black;"></canvas>
+  <canvas id="c4" style="border:1px solid black;"></canvas>
+  <canvas id="c5" style="border:1px solid black;"></canvas>
+  <canvas id="c6" style="border:1px solid black;"></canvas>
+  <canvas id="c7" style="border:1px solid black;"></canvas>
 </body>
 
 </html>
