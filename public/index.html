@@ -6,19 +6,18 @@
   <title>WebGL is cool</title>
   <!--script src="js/webgl-utils.js"></script-->
   <script id="vertShader" type="x-shader/x-vertex">
-// an attribute will receive data from a buffer
 attribute vec4 a_position;
 attribute vec4 a_color;
 
 uniform mat4 u_model_matrix;
+uniform mat4 u_view_matrix;
+uniform mat4 u_proj_matrix;
 
 varying vec4 varying_color;
 
-// all shaders have a main function
 void main() {
-  // gl_Position is a special var that a vertex shader is
-  // responsible for setting
-  gl_Position = u_model_matrix * a_position;
+  // MVP matrix must be constructed in reverse
+  gl_Position = u_proj_matrix * u_view_matrix * u_model_matrix * a_position;
   varying_color = a_color;
 }
   </script>
