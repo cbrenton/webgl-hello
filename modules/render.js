@@ -21,7 +21,9 @@ window.onload = function () {
       window.alert("Couldn't get WebGL context");
     }
     gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clearColor(0, 0, 0, 1);
+    gl.enable(gl.DEPTH_TEST);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     return gl;
   }
 
@@ -96,22 +98,16 @@ window.onload = function () {
     return shader;
   }
 
-  function draw (gl, program) {
+  function drawTriangle (gl, program, transform, viewMatrix) {
     var primitiveType = gl.TRIANGLES;
     var offset = 0;
     var count = 3;
 
     // Model matrix
-    var modelMatrix = new Matrix4().identity();
-    modelMatrix.translate([0.5, 0, 0]);
     const modelMatrixLocation = gl.getUniformLocation(program, 'u_model_matrix');
-    gl.uniformMatrix4fv(modelMatrixLocation, false, modelMatrix);
+    gl.uniformMatrix4fv(modelMatrixLocation, false, transform);
 
     // View matrix
-    const eye = new Vector3([0.5, 0, 0]);
-    const center = new Vector3([0.5, 0, -1]);
-    const up = new Vector3([0, 1, 0]);
-    var viewMatrix = new Matrix4().lookAt({ eye, center, up });
     const viewMatrixLocation = gl.getUniformLocation(program, 'u_view_matrix');
     gl.uniformMatrix4fv(viewMatrixLocation, false, viewMatrix);
 
@@ -126,11 +122,28 @@ window.onload = function () {
     const near = 0.1;
     const far = 10;
     var projMatrix = new Matrix4().ortho({ left, right, bottom, top, near, far });
-    // console.log(projMatrix);
     const projMatrixLocation = gl.getUniformLocation(program, 'u_proj_matrix');
     gl.uniformMatrix4fv(projMatrixLocation, false, projMatrix);
 
     gl.drawArrays(primitiveType, offset, count);
+  }
+
+  function draw (gl, program) {
+    var transform;
+
+    const eye = new Vector3([0, 0, 0]);
+    const center = new Vector3([eye.x, eye.y, eye.z - 1]);
+    const up = new Vector3([0, 1, 0]);
+
+    const viewMatrix = new Matrix4().lookAt({ eye, center, up });
+
+    // Draw left triangle
+    transform = new Matrix4().translate([-0.2, 0, 0]);
+    drawTriangle(gl, program, transform, viewMatrix);
+
+    // Draw right triangle (should be behind left tri)
+    transform = new Matrix4().translate([0.2, 0, -0.1]);
+    drawTriangle(gl, program, transform, viewMatrix);
 
     console.log(gl.getProgramInfoLog(program));
     gl.deleteProgram(program);
