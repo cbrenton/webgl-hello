@@ -26,7 +26,7 @@ Hello world exercises for WebGL
 
 ## Scene 5
 ### Create a scene with a rotating cube, a single light, and a plane.
-- [ ] This scene should demonstrate simple diffuse lighting.
+- [x] This scene should demonstrate simple diffuse lighting.
 - [ ] The scene should display accurate shadows via shadow mapping.
 
 ## Scene 6
