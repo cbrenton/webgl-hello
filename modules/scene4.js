@@ -12,30 +12,36 @@ attribute vec3 a_normal;
 uniform mat4 u_mvp;
 uniform mat4 u_modelInverseTranspose;
 
-varying vec3 v_color;
+varying vec3 v_normal;
 
 void main() {
   gl_Position = u_mvp * a_position;
-  v_color = mat3(u_modelInverseTranspose) * a_normal;
+  v_normal = mat3(u_modelInverseTranspose) * a_normal;
 }
 `;
 
 const fragShaderSource = `
-// fragment shaders don't have a default precision so we need to
-// pick one. mediump is a good default. it means "medium precision"
 precision mediump float;
 
-varying vec3 v_color;
+uniform vec3 u_reverseLightDir;
+uniform vec4 u_lightColor;
+uniform vec4 u_matColor;
+
+varying vec3 v_normal;
 
 void main() {
-  // gl_FragColor is a special var that a frag shader is responsible
-  // for setting
-  gl_FragColor = vec4(normalize(v_color), 1);
+  vec3 normal = normalize(v_normal);
+
+  // compute the light intensity - normal . reverse light
+  float intensity = dot(normal, u_reverseLightDir);
+  vec4 color = u_lightColor;
+  color.rgb *= intensity;
+  gl_FragColor = color;
 }
 `;
 
 export default function render () {
-  const canvas = createCanvas(sceneId);
+  const canvas = createCanvas(sceneId, true);
   const gl = initGL(canvas);
   const shaderProgram = createShaders(gl);
   createVertexData(gl, shaderProgram);
@@ -239,6 +245,21 @@ function drawArbitraryTriangles (gl, program, transform, viewMatrix, projMatrix,
   const modelInverseTransposeLocation = gl.getUniformLocation(program, 'u_modelInverseTranspose');
   gl.uniformMatrix4fv(modelInverseTransposeLocation, false, modelInverseTranspose);
 
+  // light color
+  const lightColor = new Vector4([0.2, 1, 0.2, 1]);
+  const lightColorLocation = gl.getUniformLocation(program, 'u_lightColor');
+  gl.uniform4fv(lightColorLocation, lightColor);
+
+  // light dir
+  const reverseLightDir = new Vector3([0.1, 0.7, 1]);
+  const reverseLightDirLocation = gl.getUniformLocation(program, 'u_reverseLightDir');
+  gl.uniform3fv(reverseLightDirLocation, reverseLightDir.normalize());
+
+  // material color
+  const matColor = new Vector4([0.1, 0.3, 1.0, 1]);
+  const matColorLocation = gl.getUniformLocation(program, 'u_matColor');
+  gl.uniform4fv(matColorLocation, matColor);
+
   // offset needs to be multiplied by 2 since it's gl.UNSIGNED_SHORT
   gl.drawElements(primitiveType, count, gl.UNSIGNED_SHORT, offset * 2);
 }
@@ -290,6 +311,8 @@ function draw (gl, program, timestamp) {
   const fov = degToRad(45);
   const aspect = gl.canvas.width / gl.canvas.height;
   const projMatrix = new Matrix4().perspective({ fov, aspect, near: 0.1, far: 100 });
+  projMatrix.translate([0, -2, 0]); // @TODO: why does this need to be negative?
+  projMatrix.rotateX(Math.PI / 20);
 
   // Draw cube
   const cubeTransform = new Matrix4().identity();
@@ -304,7 +327,7 @@ function draw (gl, program, timestamp) {
   // 3: then translate down and backwards to be centered underneath the cube
   planeTransform.translate([0, -3, zCenter]);
   // 2: scale to make it more like a plane
-  planeTransform.scale(10);
+  planeTransform.scale(20);
   // 1: offset in z dimension to match cube (so it doesn't fly off the screen when scaled)
   planeTransform.translate([0, -1, 0]);
 
