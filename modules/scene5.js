@@ -45,6 +45,8 @@ void main() {
 }
 `;
 
+const startTime = performance.now();
+
 export default function render () {
   const canvas = createCanvas(sceneId);
   const gl = initGL(canvas);
@@ -267,55 +269,11 @@ function drawArbitraryTriangles (gl, program, transform, viewMatrix, projMatrix,
   gl.drawElements(primitiveType, count, gl.UNSIGNED_SHORT, offset * 2);
 }
 
-function draw (gl, program, timestamp) {
-  const rotationSlider = document.getElementById(`rotationSlider${sceneId}`);
-  const topDownCheckbox = document.getElementById(`topDownCheckbox${sceneId}`);
-  const zoomSlider = document.getElementById(`zoomSlider${sceneId}`);
-
-  let rotationDeg = 0;
-  if (rotationSlider) {
-    rotationDeg = rotationSlider.value;
-  }
-
-  let useTopDown = false;
-  if (topDownCheckbox) {
-    useTopDown = topDownCheckbox.checked;
-  }
-
-  let cameraDistance = 10;
-  if (zoomSlider) {
-    cameraDistance = zoomSlider.value;
-  }
-
-  const rotationRadians = degToRad(rotationDeg);
-
-  var eye, center, up;
-
-  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-  gl.clearColor(0, 0, 0, 1);
-  gl.enable(gl.DEPTH_TEST);
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
+function drawScene (gl, projMatrix, viewMatrix, textureMatrix, program, timestamp) {
+  const elapsedMs = timestamp - startTime;
+  const msPerRotation = 8000;
+  const rotationRadians = 2 * Math.PI * (elapsedMs / msPerRotation);
   const zCenter = -4;
-
-  if (useTopDown) {
-    // Top down camera
-    eye = new Vector3([0, cameraDistance, zCenter]);
-    center = new Vector3([eye.x, 0, eye.z]);
-    up = new Vector3([0, 0, -1]);
-  } else {
-    eye = new Vector3([0, 0, cameraDistance]);
-    center = new Vector3([eye.x, eye.y, eye.z - 1]);
-    up = new Vector3([0, 1, 0]);
-  }
-
-  const viewMatrix = new Matrix4().lookAt({ eye, center, up });
-
-  const fov = degToRad(45);
-  const aspect = gl.canvas.width / gl.canvas.height;
-  const projMatrix = new Matrix4().perspective({ fov, aspect, near: 0.1, far: 100 });
-  projMatrix.translate([0, -2, 0]); // @TODO: why does this need to be negative?
-  projMatrix.rotateX(Math.PI / 20);
 
   // Draw cube
   const cubeTransform = new Matrix4().identity();
@@ -336,6 +294,49 @@ function draw (gl, program, timestamp) {
 
   // then translate downwards from the origin so we can actually see this
   drawPlane(gl, program, planeTransform, viewMatrix, projMatrix);
+}
+
+function draw (gl, program, timestamp) {
+  const topDownCheckbox = document.getElementById(`topDownCheckbox${sceneId}`);
+  const zoomSlider = document.getElementById(`zoomSlider${sceneId}`);
+
+  let useTopDown = false;
+  if (topDownCheckbox) {
+    useTopDown = topDownCheckbox.checked;
+  }
+
+  let cameraDistance = 10;
+  if (zoomSlider) {
+    cameraDistance = zoomSlider.value;
+  }
+
+  var eye, center, up;
+
+  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+  gl.clearColor(0, 0, 0, 1);
+  gl.enable(gl.DEPTH_TEST);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  if (useTopDown) {
+    // Top down camera
+    eye = new Vector3([0, cameraDistance, -4]);
+    center = new Vector3([eye.x, 0, eye.z]);
+    up = new Vector3([0, 0, -1]);
+  } else {
+    eye = new Vector3([0, 0, cameraDistance]);
+    center = new Vector3([eye.x, eye.y, eye.z - 1]);
+    up = new Vector3([0, 1, 0]);
+  }
+
+  const viewMatrix = new Matrix4().lookAt({ eye, center, up });
+
+  const fov = degToRad(45);
+  const aspect = gl.canvas.width / gl.canvas.height;
+  const projMatrix = new Matrix4().perspective({ fov, aspect, near: 0.1, far: 100 });
+  projMatrix.translate([0, -2, 0]); // @TODO: why does this need to be negative?
+  projMatrix.rotateX(Math.PI / 20);
+
+  drawScene(gl, projMatrix, viewMatrix, null, program, timestamp);
 
   // gl.deleteProgram(program);
   requestAnimationFrame(function (timestamp) {
