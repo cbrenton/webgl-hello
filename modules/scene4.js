@@ -1,6 +1,7 @@
 'use strict';
 
 import { Vector3, Vector4, Matrix4 } from 'math.gl';
+import { createCanvas, degToRad } from './sceneHelpers.js';
 
 const sceneId = '4';
 
@@ -31,24 +32,16 @@ void main() {
 }
 `;
 
-const startTime = performance.now();
-
 export default function render () {
-  var gl,
-    shaderProgram;
-
-  gl = initGL();
-  shaderProgram = createShaders(gl);
+  const canvas = createCanvas(sceneId, true);
+  const gl = initGL(canvas);
+  const shaderProgram = createShaders(gl);
   createVertexData(gl, shaderProgram);
   draw(gl, shaderProgram, performance.now());
 }
 
-function initGL () {
-  var canvas,
-    gl;
-
-  canvas = document.getElementById(`c${sceneId}`);
-  gl = canvas.getContext('webgl');
+function initGL (canvas) {
+  const gl = canvas.getContext('webgl');
   if (!gl) {
     window.alert("Couldn't get WebGL context");
   }
@@ -138,7 +131,8 @@ function createVertexData (gl, program) {
   // Set up index buffer
   indexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW); }
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+}
 
 function getShader (gl, type, shaderSource) {
   var shader = gl.createShader(type);
@@ -176,10 +170,10 @@ function drawCube (gl, program, transform, viewMatrix, projMatrix) {
 
 function drawPlane (gl, program, transform, viewMatrix, projMatrix) {
   var primitiveType = gl.TRIANGLES;
-  var offset = 18;
+  var offset = 12;
   var count = 6;
 
-  const color = new Vector4(0.2, 0.2, 0.2, 1.0);
+  const color = new Vector4(0.6, 0.6, 0.6, 1.0);
   const colorLoc = gl.getUniformLocation(program, 'u_color');
   gl.uniform4fv(colorLoc, color);
 
@@ -200,50 +194,69 @@ function drawPlane (gl, program, transform, viewMatrix, projMatrix) {
 }
 
 function draw (gl, program, timestamp) {
-  var transform;
-  const rotationPeriodMs = 8000;
-  const elapsedMs = timestamp - startTime;
-  const percentRotation = elapsedMs / rotationPeriodMs;
+  const rotationSlider = document.getElementById(`rotationSlider${sceneId}`);
+  const topDownCheckbox = document.getElementById(`topDownCheckbox${sceneId}`);
+  const zoomSlider = document.getElementById(`zoomSlider${sceneId}`);
+
+  let rotationDeg = 0;
+  if (rotationSlider) {
+    rotationDeg = rotationSlider.value;
+  }
+
+  let useTopDown = false;
+  if (topDownCheckbox) {
+    useTopDown = topDownCheckbox.checked;
+  }
+
+  let cameraDistance = 10;
+  if (zoomSlider) {
+    cameraDistance = zoomSlider.value;
+  }
+
+  const rotationRadians = degToRad(rotationDeg);
+
+  var eye, center, up;
 
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
   gl.clearColor(0, 0, 0, 1);
   gl.enable(gl.DEPTH_TEST);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  const eye = new Vector3([0, 0, 10]);
-  const center = new Vector3([eye.x, eye.y, eye.z - 1]);
-  const up = new Vector3([0, 1, 0]);
+  const zCenter = -4;
 
-  /*
-  // Top down camera
-  const eye = new Vector3([0, 10, -4]);
-  const center = new Vector3([eye.x, 0, eye.z]);
-  const up = new Vector3([0, 0, -1]);
-  */
+  if (useTopDown) {
+    // Top down camera
+    eye = new Vector3([0, cameraDistance, zCenter]);
+    center = new Vector3([eye.x, 0, eye.z]);
+    up = new Vector3([0, 0, -1]);
+  } else {
+    eye = new Vector3([0, 2, cameraDistance]);
+    center = new Vector3([eye.x, eye.y, eye.z - 1]);
+    up = new Vector3([0, 1, 0]);
+  }
 
   const viewMatrix = new Matrix4().lookAt({ eye, center, up });
 
-  const fov = 45 * Math.PI / 180;
+  const fov = degToRad(45);
   const aspect = gl.canvas.width / gl.canvas.height;
-  var projMatrix = new Matrix4().perspective({ fov, aspect, near: 0.1, far: 100 });
+  const projMatrix = new Matrix4().perspective({ fov, aspect, near: 0.1, far: 100 });
 
   // Draw cube
-  const radians = percentRotation * 2 * Math.PI;
-  transform = new Matrix4();
-  transform.translate([0, 0, -4]);
-  transform.rotateY(radians);
+  const cubeTransform = new Matrix4().identity();
+  cubeTransform.translate([0, 0, zCenter]);
+  cubeTransform.rotateY(rotationRadians);
 
-  drawCube(gl, program, transform, viewMatrix, projMatrix);
+  drawCube(gl, program, cubeTransform, viewMatrix, projMatrix);
 
   // Draw plane
-  var planeTransform = new Matrix4();
+  const planeTransform = new Matrix4().identity();
   // transforms are applied backwards
   // 3: then translate down and backwards to be centered underneath the cube
-  planeTransform.translate([0, -3, -4]);
+  planeTransform.translate([0, -3, zCenter]);
   // 2: scale to make it more like a plane
-  planeTransform.scale(100);
+  planeTransform.scale(10);
   // 1: offset in z dimension to match cube (so it doesn't fly off the screen when scaled)
-  planeTransform.translate([0, 1, 0]);
+  planeTransform.translate([0, -1, 0]);
 
   // then translate downwards from the origin so we can actually see this
   drawPlane(gl, program, planeTransform, viewMatrix, projMatrix);

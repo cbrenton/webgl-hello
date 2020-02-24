@@ -1,6 +1,9 @@
 'use strict';
 
 import { Vector3, Matrix4 } from 'math.gl';
+import { createCanvas } from './sceneHelpers.js';
+
+const sceneId = '3';
 
 const vertShaderSource = `
 attribute vec4 a_position;
@@ -36,21 +39,15 @@ void main() {
 const startTime = performance.now();
 
 export default function render () {
-  var gl,
-    shaderProgram;
-
-  gl = initGL();
-  shaderProgram = createShaders(gl);
+  const canvas = createCanvas(sceneId);
+  const gl = initGL(canvas);
+  const shaderProgram = createShaders(gl);
   createVertexData(gl, shaderProgram);
   draw(gl, shaderProgram, performance.now());
 }
 
-function initGL () {
-  var canvas,
-    gl;
-
-  canvas = document.getElementById('c3');
-  gl = canvas.getContext('webgl');
+function initGL (canvas) {
+  const gl = canvas.getContext('webgl');
   if (!gl) {
     window.alert("Couldn't get WebGL context");
   }
