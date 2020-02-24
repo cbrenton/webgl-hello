@@ -2,6 +2,8 @@
 
 import { Vector3, Vector4, Matrix4 } from 'math.gl';
 
+const sceneId = '4';
+
 const vertShaderSource = `
 attribute vec4 a_position;
 
@@ -45,7 +47,7 @@ function initGL () {
   var canvas,
     gl;
 
-  canvas = document.getElementById('c4');
+  canvas = document.getElementById(`c${sceneId}`);
   gl = canvas.getContext('webgl');
   if (!gl) {
     window.alert("Couldn't get WebGL context");
