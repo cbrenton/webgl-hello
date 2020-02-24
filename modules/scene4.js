@@ -7,14 +7,16 @@ const sceneId = '4';
 
 const vertShaderSource = `
 attribute vec4 a_position;
+attribute vec3 a_normal;
 
-uniform mat4 u_model_matrix;
-uniform mat4 u_view_matrix;
-uniform mat4 u_proj_matrix;
+uniform mat4 u_mvp;
+uniform mat4 u_modelInverseTranspose;
+
+varying vec3 v_color;
 
 void main() {
-  // MVP matrix must be constructed in reverse
-  gl_Position = u_proj_matrix * u_view_matrix * u_model_matrix * a_position;
+  gl_Position = u_mvp * a_position;
+  v_color = mat3(u_modelInverseTranspose) * a_normal;
 }
 `;
 
@@ -23,17 +25,17 @@ const fragShaderSource = `
 // pick one. mediump is a good default. it means "medium precision"
 precision mediump float;
 
-uniform vec4 u_color;
+varying vec3 v_color;
 
 void main() {
   // gl_FragColor is a special var that a frag shader is responsible
   // for setting
-  gl_FragColor = u_color;
+  gl_FragColor = vec4(normalize(v_color), 1);
 }
 `;
 
 export default function render () {
-  const canvas = createCanvas(sceneId, true);
+  const canvas = createCanvas(sceneId);
   const gl = initGL(canvas);
   const shaderProgram = createShaders(gl);
   createVertexData(gl, shaderProgram);
@@ -108,6 +110,44 @@ function createVertexData (gl, program) {
     -1.0, 1.0, -1.0,
   ]);
 
+  const normals = new Float32Array([
+    // Front face
+    0.0, 0.0, 1.0,
+    0.0, 0.0, 1.0,
+    0.0, 0.0, 1.0,
+    0.0, 0.0, 1.0,
+
+    // Back face
+    0.0, 0.0, -1.0,
+    0.0, 0.0, -1.0,
+    0.0, 0.0, -1.0,
+    0.0, 0.0, -1.0,
+
+    // Top face
+    0.0, 1.0, 0.0,
+    0.0, 1.0, 0.0,
+    0.0, 1.0, 0.0,
+    0.0, 1.0, 0.0,
+
+    // Bottom face
+    0.0, -1.0, 0.0,
+    0.0, -1.0, 0.0,
+    0.0, -1.0, 0.0,
+    0.0, -1.0, 0.0,
+
+    // Right face
+    1.0, 0.0, 0.0,
+    1.0, 0.0, 0.0,
+    1.0, 0.0, 0.0,
+    1.0, 0.0, 0.0,
+
+    // Left face
+    -1.0, 0.0, 0.0,
+    -1.0, 0.0, 0.0,
+    -1.0, 0.0, 0.0,
+    -1.0, 0.0, 0.0,
+  ]);
+
   const indices = new Uint16Array([
     0, 1, 2, 0, 2, 3, // front
     4, 5, 6, 4, 6, 7, // back
@@ -125,6 +165,16 @@ function createVertexData (gl, program) {
   // Tell the attribute how to get data out of positionBuffer
   gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(positionLoc);
+
+  // Create and populate normal buffer
+  var normalBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STATIC_DRAW);
+
+  // Set attrib pointer for this buffer to the location of 'a_normal'
+  const normalLoc = gl.getAttribLocation(program, 'a_normal');
+  gl.vertexAttribPointer(normalLoc, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(normalLoc);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
@@ -145,49 +195,49 @@ function getShader (gl, type, shaderSource) {
 }
 
 function drawCube (gl, program, transform, viewMatrix, projMatrix) {
-  var primitiveType = gl.TRIANGLES;
-  var offset = 0;
-  var count = 6 * 6;
-
-  const color = new Vector4(0.8, 0.6, 0.0, 1.0);
-  const colorLoc = gl.getUniformLocation(program, 'u_color');
-  gl.uniform4fv(colorLoc, color);
-
-  // Model matrix
-  const modelMatrixLocation = gl.getUniformLocation(program, 'u_model_matrix');
-  gl.uniformMatrix4fv(modelMatrixLocation, false, transform);
-
-  // View matrix
-  const viewMatrixLocation = gl.getUniformLocation(program, 'u_view_matrix');
-  gl.uniformMatrix4fv(viewMatrixLocation, false, viewMatrix);
-
-  // Projection matrix
-  const projMatrixLocation = gl.getUniformLocation(program, 'u_proj_matrix');
-  gl.uniformMatrix4fv(projMatrixLocation, false, projMatrix);
-
-  gl.drawElements(primitiveType, count, gl.UNSIGNED_SHORT, offset);
+  const offset = 0;
+  const count = 36;
+  const color = new Vector4(0.2, 0.2, 0.2, 1.0);
+  drawArbitraryTriangles(
+    gl,
+    program,
+    transform,
+    viewMatrix,
+    projMatrix,
+    offset,
+    count,
+    color);
 }
 
 function drawPlane (gl, program, transform, viewMatrix, projMatrix) {
+  const offset = 12;
+  const count = 6;
+  const color = new Vector4(0.2, 0.2, 0.2, 1.0);
+  drawArbitraryTriangles(
+    gl,
+    program,
+    transform,
+    viewMatrix,
+    projMatrix,
+    offset,
+    count,
+    color);
+}
+
+function drawArbitraryTriangles (gl, program, transform, viewMatrix, projMatrix, offset, count, color) {
   var primitiveType = gl.TRIANGLES;
-  var offset = 12;
-  var count = 6;
 
-  const color = new Vector4(0.6, 0.6, 0.6, 1.0);
-  const colorLoc = gl.getUniformLocation(program, 'u_color');
-  gl.uniform4fv(colorLoc, color);
+  // MVP matrix must be constructed in reverse
+  const mvp = new Matrix4().copy(projMatrix).multiplyRight(viewMatrix).multiplyRight(transform);
 
-  // Model matrix
-  const modelMatrixLocation = gl.getUniformLocation(program, 'u_model_matrix');
-  gl.uniformMatrix4fv(modelMatrixLocation, false, transform);
+  const mvpLocation = gl.getUniformLocation(program, 'u_mvp');
+  gl.uniformMatrix4fv(mvpLocation, false, mvp);
 
-  // View matrix
-  const viewMatrixLocation = gl.getUniformLocation(program, 'u_view_matrix');
-  gl.uniformMatrix4fv(viewMatrixLocation, false, viewMatrix);
-
-  // Projection matrix
-  const projMatrixLocation = gl.getUniformLocation(program, 'u_proj_matrix');
-  gl.uniformMatrix4fv(projMatrixLocation, false, projMatrix);
+  // Transpose of inverted model matrix, used for normals
+  const modelInverseTranspose = new Matrix4().copy(transform);
+  modelInverseTranspose.invert().transpose();
+  const modelInverseTransposeLocation = gl.getUniformLocation(program, 'u_modelInverseTranspose');
+  gl.uniformMatrix4fv(modelInverseTransposeLocation, false, modelInverseTranspose);
 
   // offset needs to be multiplied by 2 since it's gl.UNSIGNED_SHORT
   gl.drawElements(primitiveType, count, gl.UNSIGNED_SHORT, offset * 2);
@@ -230,7 +280,7 @@ function draw (gl, program, timestamp) {
     center = new Vector3([eye.x, 0, eye.z]);
     up = new Vector3([0, 0, -1]);
   } else {
-    eye = new Vector3([0, 2, cameraDistance]);
+    eye = new Vector3([0, 0, cameraDistance]);
     center = new Vector3([eye.x, eye.y, eye.z - 1]);
     up = new Vector3([0, 1, 0]);
   }
