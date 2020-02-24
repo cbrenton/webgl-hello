@@ -250,20 +250,20 @@ function drawArbitraryTriangles (gl, program, transform, viewMatrix, projMatrix,
     gl.uniformMatrix4fv(location, false, matrices[name]);
   }
 
-  // light color
-  const lightColor = new Vector4([0.2, 1, 0.2, 1]);
-  const lightColorLocation = gl.getUniformLocation(program, 'u_lightColor');
-  gl.uniform4fv(lightColorLocation, lightColor);
-
-  // light dir
-  const reverseLightDir = new Vector3([0.1, 0.7, 1]);
-  const reverseLightDirLocation = gl.getUniformLocation(program, 'u_reverseLightDir');
-  gl.uniform3fv(reverseLightDirLocation, reverseLightDir.normalize());
-
-  // material color
-  const matColor = new Vector4([0.1, 0.3, 1.0, 1]);
-  const matColorLocation = gl.getUniformLocation(program, 'u_matColor');
-  gl.uniform4fv(matColorLocation, matColor);
+  const vecs = {
+    u_lightColor: new Vector4([0.2, 1, 0.2, 1]),
+    u_reverseLightDir: new Vector3([0.1, 0.7, 1]),
+    u_matColor: new Vector4([0.1, 0.3, 1.0, 1]),
+  };
+  for (const name in vecs) {
+    const location = gl.getUniformLocation(program, name);
+    const vecLen = vecs[name].length;
+    if (vecLen === 3) {
+      gl.uniform3fv(location, vecs[name]);
+    } else if (vecLen === 4) {
+      gl.uniform4fv(location, vecs[name]);
+    }
+  }
 
   // offset needs to be multiplied by 2 since it's gl.UNSIGNED_SHORT
   gl.drawElements(primitiveType, count, gl.UNSIGNED_SHORT, offset * 2);
