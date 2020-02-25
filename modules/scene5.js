@@ -9,25 +9,37 @@ const sceneId = '5';
 const phongShader = {
   vs: `#version 300 es
 in vec4 a_position;
+in vec3 a_normal;
 
 uniform mat4 u_modelMatrix;
 uniform mat4 u_viewMatrix;
 uniform mat4 u_projectionMatrix;
 
+out vec3 v_normal;
+
 void main() {
   mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
+  mat4 modelInverseTranspose = transpose(inverse(u_modelMatrix));
   gl_Position = mvp * a_position;
+  v_normal = mat3(modelInverseTranspose) * a_normal;
 }
 `,
   fs: `#version 300 es
 precision mediump float;
+
+in vec3 v_normal;
 
 uniform vec4 u_matColor;
 
 out vec4 finalColor;
 
 void main() {
-  finalColor = vec4(1, 0, 0, 1);
+  vec3 u_reverseLightDir = vec3(0.1, 0.7, 1);
+  vec3 normal = normalize(v_normal);
+  float intensity = dot(normal, u_reverseLightDir);
+  vec4 color = vec4(1, 0, 0, 1);
+  color.rgb *= intensity;
+  finalColor = color;
 }
 `,
 };
