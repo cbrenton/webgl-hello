@@ -19,6 +19,7 @@ uniform vec3 u_cameraPos;
 
 out vec3 v_normal;
 out vec3 v_surfToLight;
+out vec3 v_surfToCamera;
 
 void main() {
   mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
@@ -29,9 +30,11 @@ void main() {
 
   v_normal = mat3(modelInverseTranspose) * a_normal;
 
-  vec3 surfaceWorldPosition = (u_modelMatrix * a_position).xyz;
+  vec3 surfaceWorldPos = (u_modelMatrix * a_position).xyz;
 
-  v_surfToLight = u_lightPos - surfaceWorldPosition;
+  v_surfToLight = u_lightPos - surfaceWorldPos;
+
+  v_surfToCamera = u_cameraPos - surfaceWorldPos;
 }
 `,
   fs: `#version 300 es
@@ -39,6 +42,7 @@ precision mediump float;
 
 in vec3 v_normal;
 in vec3 v_surfToLight;
+in vec3 v_surfToCamera;
 
 uniform vec4 u_matColor;
 
@@ -47,15 +51,28 @@ out vec4 finalColor;
 void main() {
   vec3 normal = normalize(v_normal);
 
-  vec3 surfaceToLightDirection = normalize(v_surfToLight);
+  vec3 surfToLightDir = normalize(v_surfToLight);
+  vec3 surfToCameraDir = normalize(v_surfToCamera);
+  vec3 halfVector = normalize(surfToLightDir + surfToCameraDir);
 
-  float intensity = dot(normal, surfaceToLightDirection);
+  vec3 lightColor = vec3(1, 1, 1);
+  vec3 matColor = vec3(1, 0, 0);
 
-  vec4 diffuse = vec4(1.0, 0.1, 0.1, 1);
+  // Diffuse
+  float diffuseIntensity = dot(normal, surfToLightDir);
+  vec3 diffuse = lightColor * diffuseIntensity;
 
-  diffuse.rgb *= intensity;
+  // Specular
+  float shininess = 50.0;
+  float specularStrength = 1.0;
+  vec3 specular = specularStrength * pow(max(dot(normal, halfVector), 0.0), shininess) * lightColor ;
 
-  finalColor = diffuse;
+  // Ambient
+  float ambientStrength = 0.1;
+  vec3 ambient = ambientStrength * lightColor;
+
+  vec3 result = (ambient + specular + diffuse) * matColor;
+  finalColor = vec4(result, 1.0);
 }
 `,
 };
@@ -207,12 +224,13 @@ function drawScene (gl, projMatrix, viewMatrix, programInfos, scene, timestamp) 
 
   // Draw cube
   const cubeTransform = new Matrix4().translate([-3, 0, zCenter]).rotateY(rotationRadians);
+  const cameraPos = new Matrix4().copy(viewMatrix).transform(scene.camera.eye);
   const cubeUniforms = {
     u_modelMatrix: cubeTransform,
     u_viewMatrix: viewMatrix,
     u_projectionMatrix: projMatrix,
-    u_lightPos: new Vector3([-10, 10, 100]),
-    u_cameraPos: scene.camera.eye,
+    u_lightPos: new Vector3([0, 100, 100]),
+    u_cameraPos: cameraPos,
   };
   drawSomething(gl, programInfos.phong, scene.cube.bufferInfo, cubeUniforms);
 
@@ -234,9 +252,9 @@ function draw (gl, programInfos, scene, timestamp) {
 
   let rotationDeg = 0;
   if (rotationSlider) {
-    rotationDeg = rotationSlider.value;
+    rotationDeg = rotationSlider.value / 36;
   }
-  const sliderRotationRadians = degToRad(rotationDeg);
+  const sliderXTranslation = rotationDeg / 10;
 
   let useTopDown = false;
   if (topDownCheckbox) {
@@ -245,7 +263,7 @@ function draw (gl, programInfos, scene, timestamp) {
 
   let cameraDistance = 10;
   if (zoomSlider) {
-    cameraDistance = zoomSlider.value;
+    cameraDistance = zoomSlider.max - zoomSlider.value;
   }
 
   var center, up;
@@ -257,17 +275,16 @@ function draw (gl, programInfos, scene, timestamp) {
 
   if (useTopDown) {
     // Top down camera
-    scene.camera.eye = new Vector3([0, cameraDistance, -4]);
+    scene.camera.eye = new Vector3([sliderXTranslation, 0, -4]);
     center = new Vector3([scene.camera.eye.x, 0, scene.camera.eye.z]);
     up = new Vector3([0, 0, -1]);
   } else {
-    scene.camera.eye = new Vector3([0, 0, cameraDistance]);
-    center = new Vector3([scene.camera.eye.x, scene.camera.eye.y, -4]);
+    scene.camera.eye = new Vector3([sliderXTranslation, 0, cameraDistance]);
+    center = new Vector3([scene.camera.eye.x, scene.camera.eye.y, cameraDistance - 4]);
     up = new Vector3([0, 1, 0]);
   }
 
   const viewMatrix = new Matrix4().lookAt({ eye: scene.camera.eye, center, up });
-  viewMatrix.rotateY(sliderRotationRadians);
 
   const fov = degToRad(45);
   const aspect = gl.canvas.width / gl.canvas.height;
