@@ -35,25 +35,34 @@ void main() {
 const planeShader = {
   vs: `#version 300 es
 in vec4 a_position;
+in vec2 a_texcoord;
 
 uniform mat4 u_modelMatrix;
 uniform mat4 u_viewMatrix;
 uniform mat4 u_projectionMatrix;
 
+out vec2 v_texcoord;
+
 void main() {
   mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
   gl_Position = mvp * a_position;
+  v_texcoord = a_texcoord;
 }
 `,
   fs: `#version 300 es
 precision mediump float;
 
+in vec2 v_texcoord;
+
 uniform vec4 u_matColor;
+uniform sampler2D u_texture;
 
 out vec4 finalColor;
 
 void main() {
-  finalColor = vec4(0.2, 1.0, 0.2, 1);
+  finalColor = vec4(v_texcoord, 1, 1);
+  vec4 colorMult = vec4(0.6, 0.6, 0.6, 1);
+  finalColor = texture(u_texture, v_texcoord) * colorMult;
 }
 `,
 };
@@ -68,6 +77,7 @@ export default function render () {
     plane: createShaders(gl, planeShader),
   };
   const scene = createVertexData(gl);
+  scene.textures = createTextures(gl);
   draw(gl, programInfos, scene, performance.now());
 }
 
@@ -83,6 +93,38 @@ function createShaders (gl, shaders) {
   const programInfo = twgl.createProgramInfo(gl, [shaders.vs, shaders.fs]);
 
   return programInfo;
+}
+
+function createTextures (gl) {
+  const textures = {};
+
+  const checkerboardTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, checkerboardTexture);
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    gl.LUMINANCE,
+    8,
+    8,
+    0,
+    gl.LUMINANCE,
+    gl.UNSIGNED_BYTE,
+    new Uint8Array([
+      0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+      0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+      0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+      0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+      0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+      0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+      0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+      0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+    ]));
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+  textures.checkerboardTexture = checkerboardTexture;
+
+  return textures;
 }
 
 function createVertexData (gl) {
@@ -132,6 +174,7 @@ function drawScene (gl, projMatrix, viewMatrix, programInfos, scene, timestamp) 
     u_modelMatrix: planeTransform,
     u_viewMatrix: viewMatrix,
     u_projectionMatrix: projMatrix,
+    u_texture: scene.textures.checkerboardTexture,
   };
   drawSomething(gl, programInfos.plane, scene.plane.bufferInfo, planeUniforms);
 }
