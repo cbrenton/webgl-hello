@@ -73,7 +73,7 @@ export default function render () {
   const canvas = createCanvas(sceneId);
   const gl = initGL(canvas);
   const programInfos = {
-    cube: createShaders(gl, cubeShader),
+    sphere: createShaders(gl, cubeShader),
     plane: createShaders(gl, planeShader),
   };
   const scene = createVertexData(gl);
@@ -129,12 +129,17 @@ function createTextures (gl) {
 
 function createVertexData (gl) {
   twgl.setAttributePrefix('a_');
-  var cubeBufferInfo = twgl.primitives.createCubeBufferInfo(gl, 1);
+  var sphereBufferInfo = twgl.primitives.createSphereBufferInfo(
+    gl,
+    1,
+    24,
+    12,
+   );
   var planeBufferInfo = twgl.primitives.createPlaneBufferInfo(gl, 2, 2);
 
   const scene = {
-    cube: {
-      bufferInfo: cubeBufferInfo,
+    sphere: {
+      bufferInfo: sphereBufferInfo,
     },
     plane: {
       bufferInfo: planeBufferInfo,
@@ -159,14 +164,14 @@ function drawScene (gl, projMatrix, viewMatrix, programInfos, scene, timestamp) 
   const rotationRadians = 2 * Math.PI * (elapsedMs / msPerRotation);
   const zCenter = -4;
 
-  // Draw cube
-  const cubeTransform = new Matrix4().translate([0, 0, zCenter]).rotateY(rotationRadians);
+  // Draw sphere
+  const sphereTransform = new Matrix4().translate([0, 0, zCenter]).rotateY(rotationRadians);
   const sphereUniforms = {
-    u_modelMatrix: cubeTransform,
+    u_modelMatrix: sphereTransform,
     u_viewMatrix: viewMatrix,
     u_projectionMatrix: projMatrix,
   };
-  drawSomething(gl, programInfos.cube, scene.cube.bufferInfo, sphereUniforms);
+  drawSomething(gl, programInfos.sphere, scene.sphere.bufferInfo, sphereUniforms);
 
   // Draw plane
   const planeTransform = new Matrix4().translate([0, -3, zCenter]).scale(20);
