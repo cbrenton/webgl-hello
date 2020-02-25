@@ -15,9 +15,10 @@ uniform mat4 u_modelMatrix;
 uniform mat4 u_viewMatrix;
 uniform mat4 u_projectionMatrix;
 uniform vec3 u_lightPos;
+uniform vec3 u_cameraPos;
 
 out vec3 v_normal;
-out vec3 v_reverseLightDir;
+out vec3 v_surfToLight;
 
 void main() {
   mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
@@ -30,14 +31,14 @@ void main() {
 
   vec3 surfaceWorldPosition = (u_modelMatrix * a_position).xyz;
 
-  v_reverseLightDir = u_lightPos - surfaceWorldPosition;
+  v_surfToLight = u_lightPos - surfaceWorldPosition;
 }
 `,
   fs: `#version 300 es
 precision mediump float;
 
 in vec3 v_normal;
-in vec3 v_reverseLightDir;
+in vec3 v_surfToLight;
 
 uniform vec4 u_matColor;
 
@@ -46,7 +47,7 @@ out vec4 finalColor;
 void main() {
   vec3 normal = normalize(v_normal);
 
-  vec3 surfaceToLightDirection = normalize(v_reverseLightDir);
+  vec3 surfaceToLightDirection = normalize(v_surfToLight);
 
   float intensity = dot(normal, surfaceToLightDirection);
 
@@ -172,6 +173,9 @@ function createScene (gl) {
     cube: {
       bufferInfo: cubeBufferInfo,
     },
+    camera: {
+      eye: new Vector3([0, 0, 10]),
+    },
   };
   return scene;
 }
@@ -208,6 +212,7 @@ function drawScene (gl, projMatrix, viewMatrix, programInfos, scene, timestamp) 
     u_viewMatrix: viewMatrix,
     u_projectionMatrix: projMatrix,
     u_lightPos: new Vector3([-10, 10, 100]),
+    u_cameraPos: scene.camera.eye,
   };
   drawSomething(gl, programInfos.phong, scene.cube.bufferInfo, cubeUniforms);
 
@@ -243,7 +248,7 @@ function draw (gl, programInfos, scene, timestamp) {
     cameraDistance = zoomSlider.value;
   }
 
-  var eye, center, up;
+  var center, up;
 
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
   gl.clearColor(0, 0, 0, 1);
@@ -252,16 +257,16 @@ function draw (gl, programInfos, scene, timestamp) {
 
   if (useTopDown) {
     // Top down camera
-    eye = new Vector3([0, cameraDistance, -4]);
-    center = new Vector3([eye.x, 0, eye.z]);
+    scene.camera.eye = new Vector3([0, cameraDistance, -4]);
+    center = new Vector3([scene.camera.eye.x, 0, scene.camera.eye.z]);
     up = new Vector3([0, 0, -1]);
   } else {
-    eye = new Vector3([0, 0, cameraDistance]);
-    center = new Vector3([eye.x, eye.y, -4]);
+    scene.camera.eye = new Vector3([0, 0, cameraDistance]);
+    center = new Vector3([scene.camera.eye.x, scene.camera.eye.y, -4]);
     up = new Vector3([0, 1, 0]);
   }
 
-  const viewMatrix = new Matrix4().lookAt({ eye, center, up });
+  const viewMatrix = new Matrix4().lookAt({ eye: scene.camera.eye, center, up });
   viewMatrix.rotateY(sliderRotationRadians);
 
   const fov = degToRad(45);
