@@ -3,6 +3,7 @@
 import { Vector3, Vector4, Matrix4 } from 'math.gl';
 import { createCanvas, degToRad } from './sceneHelpers.js';
 import { cubeData } from './geometry.js';
+import * as twgl from 'twgl.js';
 
 const sceneId = '5';
 
@@ -52,8 +53,8 @@ export default function render () {
   const canvas = createCanvas(sceneId);
   const gl = initGL(canvas);
   const shaderProgram = createShaders(gl, vertShader, fragShader);
-  const cubeIndexBuffer = createVertexData(gl, shaderProgram);
-  draw(gl, shaderProgram, cubeIndexBuffer, performance.now());
+  const scene = createVertexData(gl, shaderProgram);
+  draw(gl, shaderProgram, scene, performance.now());
 }
 
 function initGL (canvas) {
@@ -110,7 +111,10 @@ function createVertexData (gl, program) {
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
-  return indexBuffer;
+  const scene = {
+    cube: indexBuffer,
+  };
+  return scene;
 }
 
 function getShader (gl, type, shaderSource) {
@@ -123,14 +127,14 @@ function getShader (gl, type, shaderSource) {
   return shader;
 }
 
-function drawCube (gl, program, indexBuffer, transform, viewMatrix, projMatrix) {
+function drawCube (gl, program, scene, transform, viewMatrix, projMatrix) {
   const offset = 0;
   const count = 36;
   const color = new Vector4(0.2, 0.2, 0.2, 1.0);
   drawArbitraryTriangles(
     gl,
     program,
-    indexBuffer,
+    scene,
     transform,
     viewMatrix,
     projMatrix,
@@ -139,14 +143,14 @@ function drawCube (gl, program, indexBuffer, transform, viewMatrix, projMatrix) 
     color);
 }
 
-function drawPlane (gl, program, indexBuffer, transform, viewMatrix, projMatrix) {
+function drawPlane (gl, program, scene, transform, viewMatrix, projMatrix) {
   const offset = 12;
   const count = 6;
   const color = new Vector4(0.2, 0.2, 0.2, 1.0);
   drawArbitraryTriangles(
     gl,
     program,
-    indexBuffer,
+    scene,
     transform,
     viewMatrix,
     projMatrix,
@@ -155,7 +159,7 @@ function drawPlane (gl, program, indexBuffer, transform, viewMatrix, projMatrix)
     color);
 }
 
-function drawArbitraryTriangles (gl, program, indexBuffer, transform, viewMatrix, projMatrix, offset, count, color) {
+function drawArbitraryTriangles (gl, program, scene, transform, viewMatrix, projMatrix, offset, count, color) {
   var primitiveType = gl.TRIANGLES;
 
   const matrices = {
@@ -183,13 +187,13 @@ function drawArbitraryTriangles (gl, program, indexBuffer, transform, viewMatrix
     }
   }
 
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, scene.cube);
   // offset needs to be multiplied by 2 since it's gl.UNSIGNED_SHORT
   gl.drawElements(primitiveType, count, gl.UNSIGNED_SHORT, offset * 2);
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 }
 
-function drawScene (gl, projMatrix, viewMatrix, textureMatrix, program, indexBuffer, timestamp) {
+function drawScene (gl, projMatrix, viewMatrix, textureMatrix, program, scene, timestamp) {
   const elapsedMs = timestamp - startTime;
   const msPerRotation = 8000;
   const rotationRadians = 2 * Math.PI * (elapsedMs / msPerRotation);
@@ -200,7 +204,7 @@ function drawScene (gl, projMatrix, viewMatrix, textureMatrix, program, indexBuf
   cubeTransform.translate([0, 0, zCenter]);
   cubeTransform.rotateY(rotationRadians);
 
-  drawCube(gl, program, indexBuffer, cubeTransform, viewMatrix, projMatrix);
+  drawCube(gl, program, scene, cubeTransform, viewMatrix, projMatrix);
 
   // Draw plane
   const planeTransform = new Matrix4().identity();
@@ -213,10 +217,10 @@ function drawScene (gl, projMatrix, viewMatrix, textureMatrix, program, indexBuf
   planeTransform.translate([0, -1, 0]);
 
   // then translate downwards from the origin so we can actually see this
-  drawPlane(gl, program, indexBuffer, planeTransform, viewMatrix, projMatrix);
+  drawPlane(gl, program, scene, planeTransform, viewMatrix, projMatrix);
 }
 
-function draw (gl, program, indexBuffer, timestamp) {
+function draw (gl, program, scene, timestamp) {
   const topDownCheckbox = document.getElementById(`topDownCheckbox${sceneId}`);
   const zoomSlider = document.getElementById(`zoomSlider${sceneId}`);
 
@@ -256,10 +260,10 @@ function draw (gl, program, indexBuffer, timestamp) {
   projMatrix.translate([0, -2, 0]); // @TODO: why does this need to be negative?
   projMatrix.rotateX(Math.PI / 20);
 
-  drawScene(gl, projMatrix, viewMatrix, null, program, indexBuffer, timestamp);
+  drawScene(gl, projMatrix, viewMatrix, null, program, scene, timestamp);
 
   // gl.deleteProgram(program);
   requestAnimationFrame(function (timestamp) {
-    draw(gl, program, indexBuffer, timestamp);
+    draw(gl, program, scene, timestamp);
   });
 }
