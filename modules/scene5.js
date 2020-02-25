@@ -6,7 +6,8 @@ import * as twgl from 'twgl.js';
 
 const sceneId = '5';
 
-const vertShader = `#version 300 es
+const cubeShader = {
+  vs: `#version 300 es
 in vec4 a_position;
 
 uniform mat4 u_modelMatrix;
@@ -17,9 +18,8 @@ void main() {
   mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
   gl_Position = mvp * a_position;
 }
-`;
-
-const fragShader = `#version 300 es
+`,
+  fs: `#version 300 es
 precision mediump float;
 
 uniform vec4 u_matColor;
@@ -27,19 +27,48 @@ uniform vec4 u_matColor;
 out vec4 finalColor;
 
 void main() {
-  finalColor = vec4(1);
+  finalColor = vec4(1, 0, 0, 1);
 }
-`;
+`,
+};
+
+const planeShader = {
+  vs: `#version 300 es
+in vec4 a_position;
+
+uniform mat4 u_modelMatrix;
+uniform mat4 u_viewMatrix;
+uniform mat4 u_projectionMatrix;
+
+void main() {
+  mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
+  gl_Position = mvp * a_position;
+}
+`,
+  fs: `#version 300 es
+precision mediump float;
+
+uniform vec4 u_matColor;
+
+out vec4 finalColor;
+
+void main() {
+  finalColor = vec4(0.2, 1.0, 0.2, 1);
+}
+`,
+};
 
 const startTime = performance.now();
 
 export default function render () {
   const canvas = createCanvas(sceneId);
   const gl = initGL(canvas);
-  const programInfo = createShaders(gl, vertShader, fragShader);
-  const shaderProgram = programInfo.program;
-  const scene = createVertexData(gl, shaderProgram);
-  draw(gl, programInfo, scene, performance.now());
+  const programInfos = {
+    cube: createShaders(gl, cubeShader),
+    plane: createShaders(gl, planeShader),
+  };
+  const scene = createVertexData(gl);
+  draw(gl, programInfos, scene, performance.now());
 }
 
 function initGL (canvas) {
@@ -50,13 +79,13 @@ function initGL (canvas) {
   return gl;
 }
 
-function createShaders (gl, vs, fs) {
-  const programInfo = twgl.createProgramInfo(gl, [vs, fs]);
+function createShaders (gl, shaders) {
+  const programInfo = twgl.createProgramInfo(gl, [shaders.vs, shaders.fs]);
 
   return programInfo;
 }
 
-function createVertexData (gl, program) {
+function createVertexData (gl) {
   twgl.setAttributePrefix('a_');
   var cubeBufferInfo = twgl.primitives.createCubeBufferInfo(gl, 1);
   var planeBufferInfo = twgl.primitives.createPlaneBufferInfo(gl, 2, 2);
@@ -73,6 +102,8 @@ function createVertexData (gl, program) {
 }
 
 function drawSomething (gl, programInfo, bufferInfo, transform, viewMatrix, projMatrix) {
+  gl.useProgram(programInfo.program);
+
   const matrices = {
     u_modelMatrix: transform,
     u_viewMatrix: viewMatrix,
@@ -85,11 +116,10 @@ function drawSomething (gl, programInfo, bufferInfo, transform, viewMatrix, proj
 
   twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
 
-  gl.useProgram(programInfo.program);
   twgl.drawBufferInfo(gl, bufferInfo);
 }
 
-function drawScene (gl, projMatrix, viewMatrix, textureMatrix, programInfo, scene, timestamp) {
+function drawScene (gl, projMatrix, viewMatrix, programInfos, scene, timestamp) {
   const elapsedMs = timestamp - startTime;
   const msPerRotation = 8000;
   const rotationRadians = 2 * Math.PI * (elapsedMs / msPerRotation);
@@ -100,16 +130,16 @@ function drawScene (gl, projMatrix, viewMatrix, textureMatrix, programInfo, scen
   cubeTransform.translate([0, 0, zCenter]);
   cubeTransform.rotateY(rotationRadians);
 
-  drawSomething(gl, programInfo, scene.cube.bufferInfo, cubeTransform, viewMatrix, projMatrix);
+  drawSomething(gl, programInfos.cube, scene.cube.bufferInfo, cubeTransform, viewMatrix, projMatrix);
 
   // Draw plane
   const planeTransform = new Matrix4();
   planeTransform.translate([0, -3, zCenter]);
   planeTransform.scale(20);
-  drawSomething(gl, programInfo, scene.plane.bufferInfo, planeTransform, viewMatrix, projMatrix);
+  drawSomething(gl, programInfos.plane, scene.plane.bufferInfo, planeTransform, viewMatrix, projMatrix);
 }
 
-function draw (gl, programInfo, scene, timestamp) {
+function draw (gl, programInfos, scene, timestamp) {
   const topDownCheckbox = document.getElementById(`topDownCheckbox${sceneId}`);
   const zoomSlider = document.getElementById(`zoomSlider${sceneId}`);
 
@@ -149,9 +179,9 @@ function draw (gl, programInfo, scene, timestamp) {
   projMatrix.translate([0, -2, 0]); // @TODO: why does this need to be negative?
   projMatrix.rotateX(Math.PI / 20);
 
-  drawScene(gl, projMatrix, viewMatrix, null, programInfo, scene, timestamp);
+  drawScene(gl, projMatrix, viewMatrix, programInfos, scene, timestamp);
 
   requestAnimationFrame(function (timestamp) {
-    draw(gl, programInfo, scene, timestamp);
+    draw(gl, programInfos, scene, timestamp);
   });
 }
