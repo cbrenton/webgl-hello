@@ -1,6 +1,6 @@
 'use strict';
 
-import { Vector3, Vector4, Matrix4 } from 'math.gl';
+import { Vector3, Matrix4 } from 'math.gl';
 import { createCanvas, degToRad } from './sceneHelpers.js';
 import * as twgl from 'twgl.js';
 
@@ -76,7 +76,7 @@ export default function render () {
     phong: createShaders(gl, cubeShader),
     checkerboard: createShaders(gl, planeShader),
   };
-  const scene = createVertexData(gl);
+  const scene = createScene(gl);
   scene.textures = createTextures(gl);
   draw(gl, programInfos, scene, performance.now());
 }
@@ -90,9 +90,7 @@ function initGL (canvas) {
 }
 
 function createShaders (gl, shaders) {
-  const programInfo = twgl.createProgramInfo(gl, [shaders.vs, shaders.fs]);
-
-  return programInfo;
+  return twgl.createProgramInfo(gl, [shaders.vs, shaders.fs]);
 }
 
 function createTextures (gl) {
@@ -127,15 +125,15 @@ function createTextures (gl) {
   return textures;
 }
 
-function createVertexData (gl) {
+function createScene (gl) {
   twgl.setAttributePrefix('a_');
   var sphereBufferInfo = twgl.primitives.createSphereBufferInfo(
     gl,
     1,
     24,
-    12,
-   );
+    12);
   var planeBufferInfo = twgl.primitives.createPlaneBufferInfo(gl, 2, 2);
+  var cubeBufferInfo = twgl.primitives.createCubeBufferInfo(gl, 2);
 
   const scene = {
     sphere: {
@@ -143,6 +141,9 @@ function createVertexData (gl) {
     },
     plane: {
       bufferInfo: planeBufferInfo,
+    },
+    cube: {
+      bufferInfo: cubeBufferInfo,
     },
   };
   return scene;
@@ -165,13 +166,22 @@ function drawScene (gl, projMatrix, viewMatrix, programInfos, scene, timestamp) 
   const zCenter = -4;
 
   // Draw sphere
-  const sphereTransform = new Matrix4().translate([0, 0, zCenter]).rotateY(rotationRadians);
+  const sphereTransform = new Matrix4().translate([3, 0, zCenter]).rotateY(rotationRadians);
   const sphereUniforms = {
     u_modelMatrix: sphereTransform,
     u_viewMatrix: viewMatrix,
     u_projectionMatrix: projMatrix,
   };
   drawSomething(gl, programInfos.phong, scene.sphere.bufferInfo, sphereUniforms);
+
+  // Draw cube
+  const cubeTransform = new Matrix4().translate([-3, 0, zCenter]).rotateY(rotationRadians);
+  const cubeUniforms = {
+    u_modelMatrix: cubeTransform,
+    u_viewMatrix: viewMatrix,
+    u_projectionMatrix: projMatrix,
+  };
+  drawSomething(gl, programInfos.phong, scene.cube.bufferInfo, cubeUniforms);
 
   // Draw plane
   const planeTransform = new Matrix4().translate([0, -3, zCenter]).scale(20);
