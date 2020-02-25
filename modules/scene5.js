@@ -6,7 +6,7 @@ import * as twgl from 'twgl.js';
 
 const sceneId = '5';
 
-const cubeShader = {
+const phongShader = {
   vs: `#version 300 es
 in vec4 a_position;
 
@@ -73,7 +73,7 @@ export default function render () {
   const canvas = createCanvas(sceneId);
   const gl = initGL(canvas);
   const programInfos = {
-    phong: createShaders(gl, cubeShader),
+    phong: createShaders(gl, phongShader),
     checkerboard: createShaders(gl, planeShader),
   };
   const scene = createScene(gl);
