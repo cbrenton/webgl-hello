@@ -73,8 +73,8 @@ export default function render () {
   const canvas = createCanvas(sceneId);
   const gl = initGL(canvas);
   const programInfos = {
-    sphere: createShaders(gl, cubeShader),
-    plane: createShaders(gl, planeShader),
+    phong: createShaders(gl, cubeShader),
+    checkerboard: createShaders(gl, planeShader),
   };
   const scene = createVertexData(gl);
   scene.textures = createTextures(gl);
@@ -171,7 +171,7 @@ function drawScene (gl, projMatrix, viewMatrix, programInfos, scene, timestamp) 
     u_viewMatrix: viewMatrix,
     u_projectionMatrix: projMatrix,
   };
-  drawSomething(gl, programInfos.sphere, scene.sphere.bufferInfo, sphereUniforms);
+  drawSomething(gl, programInfos.phong, scene.sphere.bufferInfo, sphereUniforms);
 
   // Draw plane
   const planeTransform = new Matrix4().translate([0, -3, zCenter]).scale(20);
@@ -181,7 +181,7 @@ function drawScene (gl, projMatrix, viewMatrix, programInfos, scene, timestamp) 
     u_projectionMatrix: projMatrix,
     u_texture: scene.textures.checkerboardTexture,
   };
-  drawSomething(gl, programInfos.plane, scene.plane.bufferInfo, planeUniforms);
+  drawSomething(gl, programInfos.checkerboard, scene.plane.bufferInfo, planeUniforms);
 }
 
 function draw (gl, programInfos, scene, timestamp) {
