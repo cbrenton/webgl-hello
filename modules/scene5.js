@@ -2,7 +2,6 @@
 
 import { Vector3, Vector4, Matrix4 } from 'math.gl';
 import { createCanvas, degToRad } from './sceneHelpers.js';
-import { cubeData } from './geometry.js';
 import * as twgl from 'twgl.js';
 
 const sceneId = '5';
@@ -58,69 +57,22 @@ function createShaders (gl, vs, fs) {
 }
 
 function createVertexData (gl, program) {
-  const positions = [1, 1, -1, 1, 1, 1, 1, -1, 1, 1, -1, -1, -1, 1, 1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, 1, 1, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, -1, -1, 1, -1, -1, 1, -1, 1, -1, -1, 1, 1, 1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, -1, -1, -1, -1];
-  // const normals = [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1];
-  // const texcoords = [1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1];
-  const indices = [0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11, 12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23];
-
-  // @TODO: why is this block crucial?
-  const vertexBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-
-  const positionLoc = gl.getAttribLocation(program, 'a_position');
-  // Tell the attribute how to get data out of vertexBuffer 
-  gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(positionLoc);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
+  twgl.setAttributePrefix('a_');
   var cubeBufferInfo = twgl.primitives.createCubeBufferInfo(gl, 1);
-  console.log(cubeBufferInfo);
+  var planeBufferInfo = twgl.primitives.createPlaneBufferInfo(gl, 2, 2);
 
   const scene = {
     cube: {
       bufferInfo: cubeBufferInfo,
     },
+    plane: {
+      bufferInfo: planeBufferInfo,
+    },
   };
   return scene;
 }
 
-function drawCube (gl, programInfo, scene, transform, viewMatrix, projMatrix) {
-  const offset = 0;
-  const count = 36;
-  const color = new Vector4(0.2, 0.2, 0.2, 1.0);
-  drawArbitraryTriangles(
-    gl,
-    programInfo,
-    scene,
-    transform,
-    viewMatrix,
-    projMatrix,
-    offset,
-    count,
-    color);
-}
-
-function drawPlane (gl, programInfo, scene, transform, viewMatrix, projMatrix) {
-  const offset = 12;
-  const count = 6;
-  const color = new Vector4(0.2, 0.2, 0.2, 1.0);
-  drawArbitraryTriangles(
-    gl,
-    programInfo,
-    scene,
-    transform,
-    viewMatrix,
-    projMatrix,
-    offset,
-    count,
-    color);
-}
-
-function drawArbitraryTriangles (gl, programInfo, scene, transform, viewMatrix, projMatrix, offset, count, color) {
-  gl.bindVertexArray(scene.cube.VAO);
-
+function drawSomething (gl, programInfo, bufferInfo, transform, viewMatrix, projMatrix) {
   const matrices = {
     u_modelMatrix: transform,
     u_viewMatrix: viewMatrix,
@@ -131,10 +83,10 @@ function drawArbitraryTriangles (gl, programInfo, scene, transform, viewMatrix, 
     gl.uniformMatrix4fv(location, false, matrices[name]);
   }
 
-  twgl.setBuffersAndAttributes(gl, programInfo, scene.cube.bufferInfo);
+  twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
 
   gl.useProgram(programInfo.program);
-  twgl.drawBufferInfo(gl, scene.cube.bufferInfo);
+  twgl.drawBufferInfo(gl, bufferInfo);
 }
 
 function drawScene (gl, projMatrix, viewMatrix, textureMatrix, programInfo, scene, timestamp) {
@@ -144,24 +96,17 @@ function drawScene (gl, projMatrix, viewMatrix, textureMatrix, programInfo, scen
   const zCenter = -4;
 
   // Draw cube
-  const cubeTransform = new Matrix4().identity();
+  const cubeTransform = new Matrix4();
   cubeTransform.translate([0, 0, zCenter]);
   cubeTransform.rotateY(rotationRadians);
 
-  drawCube(gl, programInfo, scene, cubeTransform, viewMatrix, projMatrix);
+  drawSomething(gl, programInfo, scene.cube.bufferInfo, cubeTransform, viewMatrix, projMatrix);
 
   // Draw plane
-  const planeTransform = new Matrix4().identity();
-  // transforms are applied backwards
-  // 3: then translate down and backwards to be centered underneath the cube
+  const planeTransform = new Matrix4();
   planeTransform.translate([0, -3, zCenter]);
-  // 2: scale to make it more like a plane
   planeTransform.scale(20);
-  // 1: offset in z dimension to match cube (so it doesn't fly off the screen when scaled)
-  planeTransform.translate([0, -1, 0]);
-
-  // then translate downwards from the origin so we can actually see this
-  // drawPlane(gl, programInfo, scene, planeTransform, viewMatrix, projMatrix);
+  drawSomething(gl, programInfo, scene.plane.bufferInfo, planeTransform, viewMatrix, projMatrix);
 }
 
 function draw (gl, programInfo, scene, timestamp) {
@@ -206,7 +151,6 @@ function draw (gl, programInfo, scene, timestamp) {
 
   drawScene(gl, projMatrix, viewMatrix, null, programInfo, scene, timestamp);
 
-  // gl.deleteProgram(program);
   requestAnimationFrame(function (timestamp) {
     draw(gl, programInfo, scene, timestamp);
   });
