@@ -2,10 +2,11 @@
 
 import { Vector3, Vector4, Matrix4 } from 'math.gl';
 import { createCanvas, degToRad } from './sceneHelpers.js';
+import { cubeData } from './geometry.js';
 
 const sceneId = '5';
 
-const vertShaderSource = `#version 300 es
+const vertShader = `#version 300 es
 in vec4 a_position;
 in vec3 a_normal;
 
@@ -24,7 +25,7 @@ void main() {
 }
 `;
 
-const fragShaderSource = `#version 300 es
+const fragShader = `#version 300 es
 precision mediump float;
 
 uniform vec3 u_reverseLightDir;
@@ -50,7 +51,7 @@ const startTime = performance.now();
 export default function render () {
   const canvas = createCanvas(sceneId);
   const gl = initGL(canvas);
-  const shaderProgram = createShaders(gl);
+  const shaderProgram = createShaders(gl, vertShader, fragShader);
   createVertexData(gl, shaderProgram);
   draw(gl, shaderProgram, performance.now());
 }
@@ -63,14 +64,10 @@ function initGL (canvas) {
   return gl;
 }
 
-function createShaders (gl) {
-  var vertexShader,
-    fragmentShader,
-    shaderProgram;
-
-  vertexShader = getShader(gl, gl.VERTEX_SHADER, vertShaderSource);
-  fragmentShader = getShader(gl, gl.FRAGMENT_SHADER, fragShaderSource);
-  shaderProgram = gl.createProgram();
+function createShaders (gl, vs, fs) {
+  const vertexShader = getShader(gl, gl.VERTEX_SHADER, vs);
+  const fragmentShader = getShader(gl, gl.FRAGMENT_SHADER, fs);
+  const shaderProgram = gl.createProgram();
 
   gl.attachShader(shaderProgram, vertexShader);
   gl.attachShader(shaderProgram, fragmentShader);
@@ -81,96 +78,11 @@ function createShaders (gl) {
 }
 
 function createVertexData (gl, program) {
-  var vertexBuffer,
-    indexBuffer;
+  const vertices = new Float32Array(cubeData.vertices);
+  const normals = new Float32Array(cubeData.normals);
+  const indices = new Uint16Array(cubeData.indices);
 
-  // Vertices will not be reused since we don't want interpolated colors
-  const vertices = new Float32Array([
-    // Front face
-    -1.0, -1.0, 1.0,
-    1.0, -1.0, 1.0,
-    1.0, 1.0, 1.0,
-    -1.0, 1.0, 1.0,
-
-    // Back face
-    -1.0, -1.0, -1.0,
-    -1.0, 1.0, -1.0,
-    1.0, 1.0, -1.0,
-    1.0, -1.0, -1.0,
-
-    // Top face
-    -1.0, 1.0, -1.0,
-    -1.0, 1.0, 1.0,
-    1.0, 1.0, 1.0,
-    1.0, 1.0, -1.0,
-
-    // Bottom face
-    -1.0, -1.0, -1.0,
-    1.0, -1.0, -1.0,
-    1.0, -1.0, 1.0,
-    -1.0, -1.0, 1.0,
-
-    // Right face
-    1.0, -1.0, -1.0,
-    1.0, 1.0, -1.0,
-    1.0, 1.0, 1.0,
-    1.0, -1.0, 1.0,
-
-    // Left face
-    -1.0, -1.0, -1.0,
-    -1.0, -1.0, 1.0,
-    -1.0, 1.0, 1.0,
-    -1.0, 1.0, -1.0,
-  ]);
-
-  const normals = new Float32Array([
-    // Front face
-    0.0, 0.0, 1.0,
-    0.0, 0.0, 1.0,
-    0.0, 0.0, 1.0,
-    0.0, 0.0, 1.0,
-
-    // Back face
-    0.0, 0.0, -1.0,
-    0.0, 0.0, -1.0,
-    0.0, 0.0, -1.0,
-    0.0, 0.0, -1.0,
-
-    // Top face
-    0.0, 1.0, 0.0,
-    0.0, 1.0, 0.0,
-    0.0, 1.0, 0.0,
-    0.0, 1.0, 0.0,
-
-    // Bottom face
-    0.0, -1.0, 0.0,
-    0.0, -1.0, 0.0,
-    0.0, -1.0, 0.0,
-    0.0, -1.0, 0.0,
-
-    // Right face
-    1.0, 0.0, 0.0,
-    1.0, 0.0, 0.0,
-    1.0, 0.0, 0.0,
-    1.0, 0.0, 0.0,
-
-    // Left face
-    -1.0, 0.0, 0.0,
-    -1.0, 0.0, 0.0,
-    -1.0, 0.0, 0.0,
-    -1.0, 0.0, 0.0,
-  ]);
-
-  const indices = new Uint16Array([
-    0, 1, 2, 0, 2, 3, // front
-    4, 5, 6, 4, 6, 7, // back
-    8, 9, 10, 8, 10, 11, // top
-    12, 13, 14, 12, 14, 15, // bottom
-    16, 17, 18, 16, 18, 19, // right
-    20, 21, 22, 20, 22, 23, // left
-  ]);
-
-  vertexBuffer = gl.createBuffer();
+  const vertexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
@@ -192,9 +104,11 @@ function createVertexData (gl, program) {
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
   // Set up index buffer
-  indexBuffer = gl.createBuffer();
+  const indexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 }
 
 function getShader (gl, type, shaderSource) {
