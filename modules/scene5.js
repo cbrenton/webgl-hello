@@ -14,32 +14,47 @@ in vec3 a_normal;
 uniform mat4 u_modelMatrix;
 uniform mat4 u_viewMatrix;
 uniform mat4 u_projectionMatrix;
+uniform vec3 u_lightPos;
 
 out vec3 v_normal;
+out vec3 v_reverseLightDir;
 
 void main() {
   mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
+
   mat4 modelInverseTranspose = transpose(inverse(u_modelMatrix));
+
   gl_Position = mvp * a_position;
+
   v_normal = mat3(modelInverseTranspose) * a_normal;
+
+  vec3 surfaceWorldPosition = (u_modelMatrix * a_position).xyz;
+
+  v_reverseLightDir = u_lightPos - surfaceWorldPosition;
 }
 `,
   fs: `#version 300 es
 precision mediump float;
 
 in vec3 v_normal;
+in vec3 v_reverseLightDir;
 
 uniform vec4 u_matColor;
 
 out vec4 finalColor;
 
 void main() {
-  vec3 u_reverseLightDir = vec3(0.1, 0.7, 1);
   vec3 normal = normalize(v_normal);
-  float intensity = dot(normal, u_reverseLightDir);
-  vec4 color = vec4(1, 0, 0, 1);
-  color.rgb *= intensity;
-  finalColor = color;
+
+  vec3 surfaceToLightDirection = normalize(v_reverseLightDir);
+
+  float intensity = dot(normal, surfaceToLightDirection);
+
+  vec4 diffuse = vec4(1.0, 0.1, 0.1, 1);
+
+  diffuse.rgb *= intensity;
+
+  finalColor = diffuse;
 }
 `,
 };
@@ -82,7 +97,7 @@ void main() {
 const startTime = performance.now();
 
 export default function render () {
-  const canvas = createCanvas(sceneId);
+  const canvas = createCanvas(sceneId, true);
   const gl = initGL(canvas);
   const programInfos = {
     phong: createShaders(gl, phongShader),
@@ -142,8 +157,8 @@ function createScene (gl) {
   var sphereBufferInfo = twgl.primitives.createSphereBufferInfo(
     gl,
     1,
-    24,
-    12);
+    12,
+    6);
   var planeBufferInfo = twgl.primitives.createPlaneBufferInfo(gl, 2, 2);
   var cubeBufferInfo = twgl.primitives.createCubeBufferInfo(gl, 2);
 
@@ -192,6 +207,7 @@ function drawScene (gl, projMatrix, viewMatrix, programInfos, scene, timestamp) 
     u_modelMatrix: cubeTransform,
     u_viewMatrix: viewMatrix,
     u_projectionMatrix: projMatrix,
+    u_lightPos: new Vector3([-10, 10, 100]),
   };
   drawSomething(gl, programInfos.phong, scene.cube.bufferInfo, cubeUniforms);
 
@@ -207,8 +223,15 @@ function drawScene (gl, projMatrix, viewMatrix, programInfos, scene, timestamp) 
 }
 
 function draw (gl, programInfos, scene, timestamp) {
+  const rotationSlider = document.getElementById(`rotationSlider${sceneId}`);
   const topDownCheckbox = document.getElementById(`topDownCheckbox${sceneId}`);
   const zoomSlider = document.getElementById(`zoomSlider${sceneId}`);
+
+  let rotationDeg = 0;
+  if (rotationSlider) {
+    rotationDeg = rotationSlider.value;
+  }
+  const sliderRotationRadians = degToRad(rotationDeg);
 
   let useTopDown = false;
   if (topDownCheckbox) {
@@ -234,11 +257,12 @@ function draw (gl, programInfos, scene, timestamp) {
     up = new Vector3([0, 0, -1]);
   } else {
     eye = new Vector3([0, 0, cameraDistance]);
-    center = new Vector3([eye.x, eye.y, eye.z - 1]);
+    center = new Vector3([eye.x, eye.y, -4]);
     up = new Vector3([0, 1, 0]);
   }
 
   const viewMatrix = new Matrix4().lookAt({ eye, center, up });
+  viewMatrix.rotateY(sliderRotationRadians);
 
   const fov = degToRad(45);
   const aspect = gl.canvas.width / gl.canvas.height;
