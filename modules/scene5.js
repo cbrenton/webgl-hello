@@ -52,8 +52,8 @@ export default function render () {
   const canvas = createCanvas(sceneId);
   const gl = initGL(canvas);
   const shaderProgram = createShaders(gl, vertShader, fragShader);
-  createVertexData(gl, shaderProgram);
-  draw(gl, shaderProgram, performance.now());
+  const cubeIndexBuffer = createVertexData(gl, shaderProgram);
+  draw(gl, shaderProgram, cubeIndexBuffer, performance.now());
 }
 
 function initGL (canvas) {
@@ -109,6 +109,8 @@ function createVertexData (gl, program) {
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+  return indexBuffer;
 }
 
 function getShader (gl, type, shaderSource) {
@@ -121,13 +123,14 @@ function getShader (gl, type, shaderSource) {
   return shader;
 }
 
-function drawCube (gl, program, transform, viewMatrix, projMatrix) {
+function drawCube (gl, program, indexBuffer, transform, viewMatrix, projMatrix) {
   const offset = 0;
   const count = 36;
   const color = new Vector4(0.2, 0.2, 0.2, 1.0);
   drawArbitraryTriangles(
     gl,
     program,
+    indexBuffer,
     transform,
     viewMatrix,
     projMatrix,
@@ -136,13 +139,14 @@ function drawCube (gl, program, transform, viewMatrix, projMatrix) {
     color);
 }
 
-function drawPlane (gl, program, transform, viewMatrix, projMatrix) {
+function drawPlane (gl, program, indexBuffer, transform, viewMatrix, projMatrix) {
   const offset = 12;
   const count = 6;
   const color = new Vector4(0.2, 0.2, 0.2, 1.0);
   drawArbitraryTriangles(
     gl,
     program,
+    indexBuffer,
     transform,
     viewMatrix,
     projMatrix,
@@ -151,7 +155,7 @@ function drawPlane (gl, program, transform, viewMatrix, projMatrix) {
     color);
 }
 
-function drawArbitraryTriangles (gl, program, transform, viewMatrix, projMatrix, offset, count, color) {
+function drawArbitraryTriangles (gl, program, indexBuffer, transform, viewMatrix, projMatrix, offset, count, color) {
   var primitiveType = gl.TRIANGLES;
 
   const matrices = {
@@ -179,11 +183,13 @@ function drawArbitraryTriangles (gl, program, transform, viewMatrix, projMatrix,
     }
   }
 
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
   // offset needs to be multiplied by 2 since it's gl.UNSIGNED_SHORT
   gl.drawElements(primitiveType, count, gl.UNSIGNED_SHORT, offset * 2);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 }
 
-function drawScene (gl, projMatrix, viewMatrix, textureMatrix, program, timestamp) {
+function drawScene (gl, projMatrix, viewMatrix, textureMatrix, program, indexBuffer, timestamp) {
   const elapsedMs = timestamp - startTime;
   const msPerRotation = 8000;
   const rotationRadians = 2 * Math.PI * (elapsedMs / msPerRotation);
@@ -194,7 +200,7 @@ function drawScene (gl, projMatrix, viewMatrix, textureMatrix, program, timestam
   cubeTransform.translate([0, 0, zCenter]);
   cubeTransform.rotateY(rotationRadians);
 
-  drawCube(gl, program, cubeTransform, viewMatrix, projMatrix);
+  drawCube(gl, program, indexBuffer, cubeTransform, viewMatrix, projMatrix);
 
   // Draw plane
   const planeTransform = new Matrix4().identity();
@@ -207,10 +213,10 @@ function drawScene (gl, projMatrix, viewMatrix, textureMatrix, program, timestam
   planeTransform.translate([0, -1, 0]);
 
   // then translate downwards from the origin so we can actually see this
-  drawPlane(gl, program, planeTransform, viewMatrix, projMatrix);
+  drawPlane(gl, program, indexBuffer, planeTransform, viewMatrix, projMatrix);
 }
 
-function draw (gl, program, timestamp) {
+function draw (gl, program, indexBuffer, timestamp) {
   const topDownCheckbox = document.getElementById(`topDownCheckbox${sceneId}`);
   const zoomSlider = document.getElementById(`zoomSlider${sceneId}`);
 
@@ -250,10 +256,10 @@ function draw (gl, program, timestamp) {
   projMatrix.translate([0, -2, 0]); // @TODO: why does this need to be negative?
   projMatrix.rotateX(Math.PI / 20);
 
-  drawScene(gl, projMatrix, viewMatrix, null, program, timestamp);
+  drawScene(gl, projMatrix, viewMatrix, null, program, indexBuffer, timestamp);
 
   // gl.deleteProgram(program);
   requestAnimationFrame(function (timestamp) {
-    draw(gl, program, timestamp);
+    draw(gl, program, indexBuffer, timestamp);
   });
 }
