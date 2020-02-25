@@ -101,18 +101,10 @@ function createVertexData (gl) {
   return scene;
 }
 
-function drawSomething (gl, programInfo, bufferInfo, transform, viewMatrix, projMatrix) {
+function drawSomething (gl, programInfo, bufferInfo, uniforms) {
   gl.useProgram(programInfo.program);
 
-  const matrices = {
-    u_modelMatrix: transform,
-    u_viewMatrix: viewMatrix,
-    u_projectionMatrix: projMatrix,
-  };
-  for (const name in matrices) {
-    const location = gl.getUniformLocation(programInfo.program, name);
-    gl.uniformMatrix4fv(location, false, matrices[name]);
-  }
+  twgl.setUniforms(programInfo, uniforms);
 
   twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
 
@@ -126,17 +118,22 @@ function drawScene (gl, projMatrix, viewMatrix, programInfos, scene, timestamp) 
   const zCenter = -4;
 
   // Draw cube
-  const cubeTransform = new Matrix4();
-  cubeTransform.translate([0, 0, zCenter]);
-  cubeTransform.rotateY(rotationRadians);
-
-  drawSomething(gl, programInfos.cube, scene.cube.bufferInfo, cubeTransform, viewMatrix, projMatrix);
+  const cubeTransform = new Matrix4().translate([0, 0, zCenter]).rotateY(rotationRadians);
+  const sphereUniforms = {
+    u_modelMatrix: cubeTransform,
+    u_viewMatrix: viewMatrix,
+    u_projectionMatrix: projMatrix,
+  };
+  drawSomething(gl, programInfos.cube, scene.cube.bufferInfo, sphereUniforms);
 
   // Draw plane
-  const planeTransform = new Matrix4();
-  planeTransform.translate([0, -3, zCenter]);
-  planeTransform.scale(20);
-  drawSomething(gl, programInfos.plane, scene.plane.bufferInfo, planeTransform, viewMatrix, projMatrix);
+  const planeTransform = new Matrix4().translate([0, -3, zCenter]).scale(20);
+  const planeUniforms = {
+    u_modelMatrix: planeTransform,
+    u_viewMatrix: viewMatrix,
+    u_projectionMatrix: projMatrix,
+  };
+  drawSomething(gl, programInfos.plane, scene.plane.bufferInfo, planeUniforms);
 }
 
 function draw (gl, programInfos, scene, timestamp) {
