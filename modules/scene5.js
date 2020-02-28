@@ -1,7 +1,7 @@
 'use strict';
 
 import { Vector3, Matrix4 } from 'math.gl';
-import { createCanvas, degToRad } from './sceneHelpers.js';
+import { createGLCanvas, degToRad } from './sceneHelpers.js';
 import * as twgl from 'twgl.js';
 
 const sceneId = '5';
@@ -115,8 +115,7 @@ void main() {
 const startTime = performance.now();
 
 export default function render () {
-  const canvas = createCanvas(sceneId, true);
-  const gl = initGL(canvas);
+  const gl = createGLCanvas(sceneId, true);
   const programInfos = {
     phong: createShaders(gl, phongShader),
     checkerboard: createShaders(gl, planeShader),
@@ -126,13 +125,6 @@ export default function render () {
   draw(gl, programInfos, scene, performance.now());
 }
 
-function initGL (canvas) {
-  const gl = canvas.getContext('webgl2');
-  if (!gl) {
-    window.alert("Couldn't get WebGL context");
-  }
-  return gl;
-}
 
 function createShaders (gl, shaders) {
   return twgl.createProgramInfo(gl, [shaders.vs, shaders.fs]);

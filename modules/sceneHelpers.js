@@ -14,6 +14,21 @@ export function createCanvas (id, isDebug) {
   return canvas;
 }
 
+export function createGLCanvas (id, isDebug) {
+  const canvas = createCanvas(id, isDebug);
+  const gl = initGL(canvas, id);
+  return gl;
+}
+
+function initGL (canvas, id) {
+  const gl = canvas.getContext('webgl2');
+  if (!gl) {
+    window.alert("Couldn't get WebGL context");
+  }
+  window[`gl${id}`] = gl;
+  return gl;
+}
+
 export function degToRad (degrees) {
   return degrees * Math.PI / 180;
 }
