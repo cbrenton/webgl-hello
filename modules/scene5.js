@@ -125,7 +125,6 @@ export default function render () {
   draw(gl, programInfos, scene, performance.now());
 }
 
-
 function createShaders (gl, shaders) {
   return twgl.createProgramInfo(gl, [shaders.vs, shaders.fs]);
 }
@@ -279,7 +278,7 @@ function draw (gl, programInfos, scene, timestamp) {
   const viewMatrix = new Matrix4().lookAt({ eye: scene.camera.eye, center, up });
 
   const fov = degToRad(45);
-  const aspect = gl.canvas.width / gl.canvas.height;
+  const aspect = parseFloat(gl.canvas.clientWidth) / parseFloat(gl.canvas.clientHeight);
   const projMatrix = new Matrix4().perspective({ fov, aspect, near: 0.1, far: 100 });
   projMatrix.translate([0, -2, 0]); // @TODO: why does this need to be negative?
   projMatrix.rotateX(Math.PI / 20);
