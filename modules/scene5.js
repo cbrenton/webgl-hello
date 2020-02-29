@@ -171,19 +171,25 @@ function createScene(gl) {
   return scene;
 }
 
-function drawScene(gl, projMatrix, viewMatrix, programInfos, scene, timestamp) {
+function drawScene(gl, programInfos, scene, timestamp) {
   const elapsedMs = timestamp - startTime;
   const msPerRotation = 8000;
   const rotationRadians = 2 * Math.PI * (elapsedMs / msPerRotation);
   const zCenter = -4;
+
+  // Set up viewport and clear color and depth buffers
+  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+  gl.clearColor(0, 0, 0, 1);
+  gl.enable(gl.DEPTH_TEST);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   // Draw sphere
   const sphereTransform =
       new Matrix4().translate([3, 0, zCenter]).rotateY(rotationRadians);
   const sphereUniforms = {
     u_modelMatrix: sphereTransform,
-    u_viewMatrix: viewMatrix,
-    u_projectionMatrix: projMatrix,
+    u_viewMatrix: scene.camera.viewMatrix,
+    u_projectionMatrix: scene.camera.projMatrix,
   };
   util.drawBuffer(
       gl, programInfos.phong, scene.sphere.bufferInfo, sphereUniforms);
@@ -191,11 +197,12 @@ function drawScene(gl, projMatrix, viewMatrix, programInfos, scene, timestamp) {
   // Draw cube
   const cubeTransform =
       new Matrix4().translate([-3, 0, zCenter]).rotateY(rotationRadians);
-  const cameraPos = new Matrix4().copy(viewMatrix).transform(scene.camera.eye);
+  const cameraPos =
+      new Matrix4().copy(scene.camera.viewMatrix).transform(scene.camera.eye);
   const cubeUniforms = {
     u_modelMatrix: cubeTransform,
-    u_viewMatrix: viewMatrix,
-    u_projectionMatrix: projMatrix,
+    u_viewMatrix: scene.camera.viewMatrix,
+    u_projectionMatrix: scene.camera.projMatrix,
     u_lightPos: new Vector3([0, 100, 100]),
     u_cameraPos: cameraPos,
   };
@@ -205,8 +212,8 @@ function drawScene(gl, projMatrix, viewMatrix, programInfos, scene, timestamp) {
   const planeTransform = new Matrix4().translate([0, -3, zCenter]).scale(20);
   const planeUniforms = {
     u_modelMatrix: planeTransform,
-    u_viewMatrix: viewMatrix,
-    u_projectionMatrix: projMatrix,
+    u_viewMatrix: scene.camera.viewMatrix,
+    u_projectionMatrix: scene.camera.projMatrix,
     u_texture: scene.textures.checkerboardTexture,
   };
   util.drawBuffer(
@@ -236,11 +243,6 @@ function draw(gl, programInfos, scene, timestamp) {
 
   var center, up;
 
-  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-  gl.clearColor(0, 0, 0, 1);
-  gl.enable(gl.DEPTH_TEST);
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
   if (useTopDown) {
     // Top down camera
     scene.camera.eye = new Vector3([sliderXTranslation, 0, -4]);
@@ -253,18 +255,19 @@ function draw(gl, programInfos, scene, timestamp) {
     up = new Vector3([0, 1, 0]);
   }
 
-  const viewMatrix = new Matrix4().lookAt({eye: scene.camera.eye, center, up});
+  scene.camera.viewMatrix =
+      new Matrix4().lookAt({eye: scene.camera.eye, center, up});
 
   const fov = util.degToRad(45);
   const aspect =
       parseFloat(gl.canvas.clientWidth) / parseFloat(gl.canvas.clientHeight);
-  const projMatrix =
+  scene.camera.projMatrix =
       new Matrix4().perspective({fov, aspect, near: 0.1, far: 100});
-  projMatrix.translate(
+  scene.camera.projMatrix.translate(
       [0, -2, 0]);  // @TODO: why does this need to be negative?
-  projMatrix.rotateX(Math.PI / 20);
+  scene.camera.projMatrix.rotateX(Math.PI / 20);
 
-  drawScene(gl, projMatrix, viewMatrix, programInfos, scene, timestamp);
+  drawScene(gl, programInfos, scene, timestamp);
 
   requestAnimationFrame(function(timestamp) {
     draw(gl, programInfos, scene, timestamp);
