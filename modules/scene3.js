@@ -1,7 +1,7 @@
 'use strict';
 
-import { Vector3, Matrix4 } from 'math.gl';
-import { createCanvas } from './sceneHelpers.js';
+import {Vector3, Matrix4} from 'math.gl';
+import {createCanvas} from './sceneHelpers.js';
 
 const sceneId = '3';
 
@@ -38,7 +38,7 @@ void main() {
 
 const startTime = performance.now();
 
-export default function render () {
+export default function render() {
   const canvas = createCanvas(sceneId);
   const gl = initGL(canvas);
   const shaderProgram = createShaders(gl);
@@ -46,18 +46,16 @@ export default function render () {
   draw(gl, shaderProgram, performance.now());
 }
 
-function initGL (canvas) {
+function initGL(canvas) {
   const gl = canvas.getContext('webgl');
   if (!gl) {
-    window.alert("Couldn't get WebGL context");
+    window.alert('Couldn\'t get WebGL context');
   }
   return gl;
 }
 
-function createShaders (gl) {
-  var vertexShader,
-    fragmentShader,
-    shaderProgram;
+function createShaders(gl) {
+  var vertexShader, fragmentShader, shaderProgram;
 
   vertexShader = getShader(gl, gl.VERTEX_SHADER, vertShaderSource);
   fragmentShader = getShader(gl, gl.FRAGMENT_SHADER, fragShaderSource);
@@ -71,57 +69,103 @@ function createShaders (gl) {
   return shaderProgram;
 }
 
-function createVertexData (gl, program) {
-  var vertexBuffer,
-    colorBuffer,
-    indexBuffer;
+function createVertexData(gl, program) {
+  var vertexBuffer, colorBuffer, indexBuffer;
 
   // Vertices will not be reused since we don't want interpolated colors
   const vertices = new Float32Array([
     // Front face
-    -1.0, -1.0, 1.0,
-    1.0, -1.0, 1.0,
-    1.0, 1.0, 1.0,
-    -1.0, 1.0, 1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    1.0,
+    -1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    -1.0,
+    1.0,
+    1.0,
 
     // Back face
-    -1.0, -1.0, -1.0,
-    -1.0, 1.0, -1.0,
-    1.0, 1.0, -1.0,
-    1.0, -1.0, -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    1.0,
+    1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    -1.0,
 
     // Top face
-    -1.0, 1.0, -1.0,
-    -1.0, 1.0, 1.0,
-    1.0, 1.0, 1.0,
-    1.0, 1.0, -1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    -1.0,
 
     // Bottom face
-    -1.0, -1.0, -1.0,
-    1.0, -1.0, -1.0,
-    1.0, -1.0, 1.0,
-    -1.0, -1.0, 1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    -1.0,
+    1.0,
 
     // Right face
-    1.0, -1.0, -1.0,
-    1.0, 1.0, -1.0,
-    1.0, 1.0, 1.0,
-    1.0, -1.0, 1.0,
+    1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    1.0,
+    -1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    -1.0,
+    1.0,
 
     // Left face
-    -1.0, -1.0, -1.0,
-    -1.0, -1.0, 1.0,
-    -1.0, 1.0, 1.0,
-    -1.0, 1.0, -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    1.0,
+    1.0,
+    -1.0,
+    1.0,
+    -1.0,
   ]);
 
   const faceColors = [
-    [1.0, 1.0, 1.0, 1.0], // Front face: white
-    [1.0, 0.0, 0.0, 1.0], // Back face: red
-    [0.0, 1.0, 0.0, 1.0], // Top face: green
-    [0.0, 0.0, 1.0, 1.0], // Bottom face: blue
-    [1.0, 1.0, 0.0, 1.0], // Right face: yellow
-    [1.0, 0.0, 1.0, 1.0], // Left face: purple
+    [1.0, 1.0, 1.0, 1.0],  // Front face: white
+    [1.0, 0.0, 0.0, 1.0],  // Back face: red
+    [0.0, 1.0, 0.0, 1.0],  // Top face: green
+    [0.0, 0.0, 1.0, 1.0],  // Bottom face: blue
+    [1.0, 1.0, 0.0, 1.0],  // Right face: yellow
+    [1.0, 0.0, 1.0, 1.0],  // Left face: purple
   ];
 
   // Make per-vertex colors for each face
@@ -133,12 +177,12 @@ function createVertexData (gl, program) {
   const colors = new Float32Array(colorsArr);
 
   const indices = new Uint16Array([
-    0, 1, 2, 0, 2, 3, // front
-    4, 5, 6, 4, 6, 7, // back
-    8, 9, 10, 8, 10, 11, // top
-    12, 13, 14, 12, 14, 15, // bottom
-    16, 17, 18, 16, 18, 19, // right
-    20, 21, 22, 20, 22, 23, // left
+    0,  1,  2,  0,  2,  3,   // front
+    4,  5,  6,  4,  6,  7,   // back
+    8,  9,  10, 8,  10, 11,  // top
+    12, 13, 14, 12, 14, 15,  // bottom
+    16, 17, 18, 16, 18, 19,  // right
+    20, 21, 22, 20, 22, 23,  // left
   ]);
 
   vertexBuffer = gl.createBuffer();
@@ -167,7 +211,7 @@ function createVertexData (gl, program) {
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
 }
 
-function getShader (gl, type, shaderSource) {
+function getShader(gl, type, shaderSource) {
   var shader = gl.createShader(type);
   gl.shaderSource(shader, shaderSource);
   gl.compileShader(shader);
@@ -177,7 +221,7 @@ function getShader (gl, type, shaderSource) {
   return shader;
 }
 
-function drawCube (gl, program, transform, viewMatrix) {
+function drawCube(gl, program, transform, viewMatrix) {
   var primitiveType = gl.TRIANGLES;
   var offset = 0;
   var count = 6 * 6;
@@ -193,14 +237,14 @@ function drawCube (gl, program, transform, viewMatrix) {
   // Projection matrix
   const fov = 45 * Math.PI / 180;
   const aspect = gl.canvas.width / gl.canvas.height;
-  var projMatrix = new Matrix4().perspective({ fov, aspect, near: 0.1, far: 10 });
+  var projMatrix = new Matrix4().perspective({fov, aspect, near: 0.1, far: 10});
   const projMatrixLocation = gl.getUniformLocation(program, 'u_proj_matrix');
   gl.uniformMatrix4fv(projMatrixLocation, false, projMatrix);
 
   gl.drawElements(primitiveType, count, gl.UNSIGNED_SHORT, offset);
 }
 
-function draw (gl, program, timestamp) {
+function draw(gl, program, timestamp) {
   var transform;
   const rotationPeriodMs = 8000;
   const elapsedMs = timestamp - startTime;
@@ -215,7 +259,7 @@ function draw (gl, program, timestamp) {
   const center = new Vector3([eye.x, eye.y, eye.z - 1]);
   const up = new Vector3([0, 1, 0]);
 
-  const viewMatrix = new Matrix4().lookAt({ eye, center, up });
+  const viewMatrix = new Matrix4().lookAt({eye, center, up});
 
   // Draw cube
   const radians = percentRotation * 2 * Math.PI;
@@ -225,7 +269,7 @@ function draw (gl, program, timestamp) {
   drawCube(gl, program, transform, viewMatrix);
 
   // gl.deleteProgram(program);
-  requestAnimationFrame(function (timestamp) {
+  requestAnimationFrame(function(timestamp) {
     draw(gl, program, timestamp);
   });
 }

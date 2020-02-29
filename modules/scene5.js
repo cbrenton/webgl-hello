@@ -1,6 +1,6 @@
 'use strict';
 
-import { Vector3, Matrix4 } from 'math.gl';
+import {Vector3, Matrix4} from 'math.gl';
 import * as util from './sceneHelpers.js';
 import * as twgl from 'twgl.js';
 
@@ -114,7 +114,7 @@ void main() {
 
 const startTime = performance.now();
 
-export default function render () {
+export default function render() {
   const gl = util.createGLCanvas(sceneId, true);
   const programInfos = {
     phong: util.createShaders(gl, phongShader),
@@ -125,30 +125,21 @@ export default function render () {
   draw(gl, programInfos, scene, performance.now());
 }
 
-function createTextures (gl) {
+function createTextures(gl) {
   const textures = {};
 
   const checkerboardTexture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, checkerboardTexture);
   gl.texImage2D(
-    gl.TEXTURE_2D,
-    0,
-    gl.LUMINANCE,
-    8,
-    8,
-    0,
-    gl.LUMINANCE,
-    gl.UNSIGNED_BYTE,
-    new Uint8Array([
-      0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-      0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-      0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-      0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-      0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-      0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-      0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-      0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-    ]));
+      gl.TEXTURE_2D, 0, gl.LUMINANCE, 8, 8, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE,
+      new Uint8Array([
+        0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xCC, 0xFF, 0xCC,
+        0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+        0xFF, 0xCC, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xFF,
+        0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xCC, 0xFF, 0xCC, 0xFF,
+        0xCC, 0xFF, 0xCC, 0xFF, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+        0xCC, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+      ]));
   gl.generateMipmap(gl.TEXTURE_2D);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
@@ -157,13 +148,9 @@ function createTextures (gl) {
   return textures;
 }
 
-function createScene (gl) {
+function createScene(gl) {
   twgl.setAttributePrefix('a_');
-  var sphereBufferInfo = twgl.primitives.createSphereBufferInfo(
-    gl,
-    1,
-    12,
-    6);
+  var sphereBufferInfo = twgl.primitives.createSphereBufferInfo(gl, 1, 12, 6);
   var planeBufferInfo = twgl.primitives.createPlaneBufferInfo(gl, 2, 2);
   var cubeBufferInfo = twgl.primitives.createCubeBufferInfo(gl, 2);
 
@@ -184,23 +171,26 @@ function createScene (gl) {
   return scene;
 }
 
-function drawScene (gl, projMatrix, viewMatrix, programInfos, scene, timestamp) {
+function drawScene(gl, projMatrix, viewMatrix, programInfos, scene, timestamp) {
   const elapsedMs = timestamp - startTime;
   const msPerRotation = 8000;
   const rotationRadians = 2 * Math.PI * (elapsedMs / msPerRotation);
   const zCenter = -4;
 
   // Draw sphere
-  const sphereTransform = new Matrix4().translate([3, 0, zCenter]).rotateY(rotationRadians);
+  const sphereTransform =
+      new Matrix4().translate([3, 0, zCenter]).rotateY(rotationRadians);
   const sphereUniforms = {
     u_modelMatrix: sphereTransform,
     u_viewMatrix: viewMatrix,
     u_projectionMatrix: projMatrix,
   };
-  util.drawBuffer(gl, programInfos.phong, scene.sphere.bufferInfo, sphereUniforms);
+  util.drawBuffer(
+      gl, programInfos.phong, scene.sphere.bufferInfo, sphereUniforms);
 
   // Draw cube
-  const cubeTransform = new Matrix4().translate([-3, 0, zCenter]).rotateY(rotationRadians);
+  const cubeTransform =
+      new Matrix4().translate([-3, 0, zCenter]).rotateY(rotationRadians);
   const cameraPos = new Matrix4().copy(viewMatrix).transform(scene.camera.eye);
   const cubeUniforms = {
     u_modelMatrix: cubeTransform,
@@ -219,10 +209,11 @@ function drawScene (gl, projMatrix, viewMatrix, programInfos, scene, timestamp) 
     u_projectionMatrix: projMatrix,
     u_texture: scene.textures.checkerboardTexture,
   };
-  util.drawBuffer(gl, programInfos.checkerboard, scene.plane.bufferInfo, planeUniforms);
+  util.drawBuffer(
+      gl, programInfos.checkerboard, scene.plane.bufferInfo, planeUniforms);
 }
 
-function draw (gl, programInfos, scene, timestamp) {
+function draw(gl, programInfos, scene, timestamp) {
   const rotationSlider = document.getElementById(`rotationSlider${sceneId}`);
   const topDownCheckbox = document.getElementById(`topDownCheckbox${sceneId}`);
   const zoomSlider = document.getElementById(`zoomSlider${sceneId}`);
@@ -257,21 +248,25 @@ function draw (gl, programInfos, scene, timestamp) {
     up = new Vector3([0, 0, -1]);
   } else {
     scene.camera.eye = new Vector3([sliderXTranslation, 0, cameraDistance]);
-    center = new Vector3([scene.camera.eye.x, scene.camera.eye.y, cameraDistance - 4]);
+    center = new Vector3(
+        [scene.camera.eye.x, scene.camera.eye.y, cameraDistance - 4]);
     up = new Vector3([0, 1, 0]);
   }
 
-  const viewMatrix = new Matrix4().lookAt({ eye: scene.camera.eye, center, up });
+  const viewMatrix = new Matrix4().lookAt({eye: scene.camera.eye, center, up});
 
   const fov = util.degToRad(45);
-  const aspect = parseFloat(gl.canvas.clientWidth) / parseFloat(gl.canvas.clientHeight);
-  const projMatrix = new Matrix4().perspective({ fov, aspect, near: 0.1, far: 100 });
-  projMatrix.translate([0, -2, 0]); // @TODO: why does this need to be negative?
+  const aspect =
+      parseFloat(gl.canvas.clientWidth) / parseFloat(gl.canvas.clientHeight);
+  const projMatrix =
+      new Matrix4().perspective({fov, aspect, near: 0.1, far: 100});
+  projMatrix.translate(
+      [0, -2, 0]);  // @TODO: why does this need to be negative?
   projMatrix.rotateX(Math.PI / 20);
 
   drawScene(gl, projMatrix, viewMatrix, programInfos, scene, timestamp);
 
-  requestAnimationFrame(function (timestamp) {
+  requestAnimationFrame(function(timestamp) {
     draw(gl, programInfos, scene, timestamp);
   });
 }

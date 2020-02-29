@@ -1,7 +1,7 @@
 'use strict';
 
-import { Vector3, Vector4, Matrix4 } from 'math.gl';
-import { createCanvas, degToRad } from './sceneHelpers.js';
+import {Vector3, Vector4, Matrix4} from 'math.gl';
+import {createCanvas, degToRad} from './sceneHelpers.js';
 
 const sceneId = '4';
 
@@ -40,7 +40,7 @@ void main() {
 }
 `;
 
-export default function render () {
+export default function render() {
   const canvas = createCanvas(sceneId, true);
   const gl = initGL(canvas);
   const shaderProgram = createShaders(gl);
@@ -48,18 +48,16 @@ export default function render () {
   draw(gl, shaderProgram, performance.now());
 }
 
-function initGL (canvas) {
+function initGL(canvas) {
   const gl = canvas.getContext('webgl');
   if (!gl) {
-    window.alert("Couldn't get WebGL context");
+    window.alert('Couldn\'t get WebGL context');
   }
   return gl;
 }
 
-function createShaders (gl) {
-  var vertexShader,
-    fragmentShader,
-    shaderProgram;
+function createShaders(gl) {
+  var vertexShader, fragmentShader, shaderProgram;
 
   vertexShader = getShader(gl, gl.VERTEX_SHADER, vertShaderSource);
   fragmentShader = getShader(gl, gl.FRAGMENT_SHADER, fragShaderSource);
@@ -73,94 +71,189 @@ function createShaders (gl) {
   return shaderProgram;
 }
 
-function createVertexData (gl, program) {
-  var vertexBuffer,
-    indexBuffer;
+function createVertexData(gl, program) {
+  var vertexBuffer, indexBuffer;
 
   // Vertices will not be reused since we don't want interpolated colors
   const vertices = new Float32Array([
     // Front face
-    -1.0, -1.0, 1.0,
-    1.0, -1.0, 1.0,
-    1.0, 1.0, 1.0,
-    -1.0, 1.0, 1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    1.0,
+    -1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    -1.0,
+    1.0,
+    1.0,
 
     // Back face
-    -1.0, -1.0, -1.0,
-    -1.0, 1.0, -1.0,
-    1.0, 1.0, -1.0,
-    1.0, -1.0, -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    1.0,
+    1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    -1.0,
 
     // Top face
-    -1.0, 1.0, -1.0,
-    -1.0, 1.0, 1.0,
-    1.0, 1.0, 1.0,
-    1.0, 1.0, -1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    -1.0,
 
     // Bottom face
-    -1.0, -1.0, -1.0,
-    1.0, -1.0, -1.0,
-    1.0, -1.0, 1.0,
-    -1.0, -1.0, 1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    -1.0,
+    1.0,
 
     // Right face
-    1.0, -1.0, -1.0,
-    1.0, 1.0, -1.0,
-    1.0, 1.0, 1.0,
-    1.0, -1.0, 1.0,
+    1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    1.0,
+    -1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    -1.0,
+    1.0,
 
     // Left face
-    -1.0, -1.0, -1.0,
-    -1.0, -1.0, 1.0,
-    -1.0, 1.0, 1.0,
-    -1.0, 1.0, -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    1.0,
+    1.0,
+    -1.0,
+    1.0,
+    -1.0,
   ]);
 
   const normals = new Float32Array([
     // Front face
-    0.0, 0.0, 1.0,
-    0.0, 0.0, 1.0,
-    0.0, 0.0, 1.0,
-    0.0, 0.0, 1.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
 
     // Back face
-    0.0, 0.0, -1.0,
-    0.0, 0.0, -1.0,
-    0.0, 0.0, -1.0,
-    0.0, 0.0, -1.0,
+    0.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    -1.0,
 
     // Top face
-    0.0, 1.0, 0.0,
-    0.0, 1.0, 0.0,
-    0.0, 1.0, 0.0,
-    0.0, 1.0, 0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
 
     // Bottom face
-    0.0, -1.0, 0.0,
-    0.0, -1.0, 0.0,
-    0.0, -1.0, 0.0,
-    0.0, -1.0, 0.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    -1.0,
+    0.0,
 
     // Right face
-    1.0, 0.0, 0.0,
-    1.0, 0.0, 0.0,
-    1.0, 0.0, 0.0,
-    1.0, 0.0, 0.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
 
     // Left face
-    -1.0, 0.0, 0.0,
-    -1.0, 0.0, 0.0,
-    -1.0, 0.0, 0.0,
-    -1.0, 0.0, 0.0,
+    -1.0,
+    0.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
   ]);
 
   const indices = new Uint16Array([
-    0, 1, 2, 0, 2, 3, // front
-    4, 5, 6, 4, 6, 7, // back
-    8, 9, 10, 8, 10, 11, // top
-    12, 13, 14, 12, 14, 15, // bottom
-    16, 17, 18, 16, 18, 19, // right
-    20, 21, 22, 20, 22, 23, // left
+    0,  1,  2,  0,  2,  3,   // front
+    4,  5,  6,  4,  6,  7,   // back
+    8,  9,  10, 8,  10, 11,  // top
+    12, 13, 14, 12, 14, 15,  // bottom
+    16, 17, 18, 16, 18, 19,  // right
+    20, 21, 22, 20, 22, 23,  // left
   ]);
 
   vertexBuffer = gl.createBuffer();
@@ -190,7 +283,7 @@ function createVertexData (gl, program) {
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
 }
 
-function getShader (gl, type, shaderSource) {
+function getShader(gl, type, shaderSource) {
   var shader = gl.createShader(type);
   gl.shaderSource(shader, shaderSource);
   gl.compileShader(shader);
@@ -200,41 +293,31 @@ function getShader (gl, type, shaderSource) {
   return shader;
 }
 
-function drawCube (gl, program, transform, viewMatrix, projMatrix) {
+function drawCube(gl, program, transform, viewMatrix, projMatrix) {
   const offset = 0;
   const count = 36;
   const color = new Vector4(0.2, 0.2, 0.2, 1.0);
   drawArbitraryTriangles(
-    gl,
-    program,
-    transform,
-    viewMatrix,
-    projMatrix,
-    offset,
-    count,
-    color);
+      gl, program, transform, viewMatrix, projMatrix, offset, count, color);
 }
 
-function drawPlane (gl, program, transform, viewMatrix, projMatrix) {
+function drawPlane(gl, program, transform, viewMatrix, projMatrix) {
   const offset = 12;
   const count = 6;
   const color = new Vector4(0.2, 0.2, 0.2, 1.0);
   drawArbitraryTriangles(
-    gl,
-    program,
-    transform,
-    viewMatrix,
-    projMatrix,
-    offset,
-    count,
-    color);
+      gl, program, transform, viewMatrix, projMatrix, offset, count, color);
 }
 
-function drawArbitraryTriangles (gl, program, transform, viewMatrix, projMatrix, offset, count, color) {
+function drawArbitraryTriangles(
+    gl, program, transform, viewMatrix, projMatrix, offset, count, color) {
   var primitiveType = gl.TRIANGLES;
 
   // MVP matrix must be constructed in reverse
-  const mvp = new Matrix4().copy(projMatrix).multiplyRight(viewMatrix).multiplyRight(transform);
+  const mvp = new Matrix4()
+                  .copy(projMatrix)
+                  .multiplyRight(viewMatrix)
+                  .multiplyRight(transform);
 
   const mvpLocation = gl.getUniformLocation(program, 'u_mvp');
   gl.uniformMatrix4fv(mvpLocation, false, mvp);
@@ -242,8 +325,10 @@ function drawArbitraryTriangles (gl, program, transform, viewMatrix, projMatrix,
   // Transpose of inverted model matrix, used for normals
   const modelInverseTranspose = new Matrix4().copy(transform);
   modelInverseTranspose.invert().transpose();
-  const modelInverseTransposeLocation = gl.getUniformLocation(program, 'u_modelInverseTranspose');
-  gl.uniformMatrix4fv(modelInverseTransposeLocation, false, modelInverseTranspose);
+  const modelInverseTransposeLocation =
+      gl.getUniformLocation(program, 'u_modelInverseTranspose');
+  gl.uniformMatrix4fv(
+      modelInverseTransposeLocation, false, modelInverseTranspose);
 
   // light color
   const lightColor = new Vector4([0.2, 1, 0.2, 1]);
@@ -252,7 +337,8 @@ function drawArbitraryTriangles (gl, program, transform, viewMatrix, projMatrix,
 
   // light dir
   const reverseLightDir = new Vector3([0.1, 0.7, 1]);
-  const reverseLightDirLocation = gl.getUniformLocation(program, 'u_reverseLightDir');
+  const reverseLightDirLocation =
+      gl.getUniformLocation(program, 'u_reverseLightDir');
   gl.uniform3fv(reverseLightDirLocation, reverseLightDir.normalize());
 
   // material color
@@ -264,7 +350,7 @@ function drawArbitraryTriangles (gl, program, transform, viewMatrix, projMatrix,
   gl.drawElements(primitiveType, count, gl.UNSIGNED_SHORT, offset * 2);
 }
 
-function draw (gl, program, timestamp) {
+function draw(gl, program, timestamp) {
   const rotationSlider = document.getElementById(`rotationSlider${sceneId}`);
   const topDownCheckbox = document.getElementById(`topDownCheckbox${sceneId}`);
   const zoomSlider = document.getElementById(`zoomSlider${sceneId}`);
@@ -306,12 +392,14 @@ function draw (gl, program, timestamp) {
     up = new Vector3([0, 1, 0]);
   }
 
-  const viewMatrix = new Matrix4().lookAt({ eye, center, up });
+  const viewMatrix = new Matrix4().lookAt({eye, center, up});
 
   const fov = degToRad(45);
   const aspect = gl.canvas.width / gl.canvas.height;
-  const projMatrix = new Matrix4().perspective({ fov, aspect, near: 0.1, far: 100 });
-  projMatrix.translate([0, -2, 0]); // @TODO: why does this need to be negative?
+  const projMatrix =
+      new Matrix4().perspective({fov, aspect, near: 0.1, far: 100});
+  projMatrix.translate(
+      [0, -2, 0]);  // @TODO: why does this need to be negative?
   projMatrix.rotateX(Math.PI / 20);
 
   // Draw cube
@@ -328,14 +416,15 @@ function draw (gl, program, timestamp) {
   planeTransform.translate([0, -3, zCenter]);
   // 2: scale to make it more like a plane
   planeTransform.scale(20);
-  // 1: offset in z dimension to match cube (so it doesn't fly off the screen when scaled)
+  // 1: offset in z dimension to match cube (so it doesn't fly off the screen
+  // when scaled)
   planeTransform.translate([0, -1, 0]);
 
   // then translate downwards from the origin so we can actually see this
   drawPlane(gl, program, planeTransform, viewMatrix, projMatrix);
 
   // gl.deleteProgram(program);
-  requestAnimationFrame(function (timestamp) {
+  requestAnimationFrame(function(timestamp) {
     draw(gl, program, timestamp);
   });
 }

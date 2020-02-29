@@ -2,7 +2,7 @@ import * as twgl from 'twgl.js';
 
 /* ======== GL helper functions ======== */
 
-export function createCanvas (id, isDebug) {
+export function createCanvas(id, isDebug) {
   isDebug = isDebug || false;
   const el = document.createElement('div');
   el.setAttribute('class', 'canvasContainer');
@@ -18,17 +18,17 @@ export function createCanvas (id, isDebug) {
   return canvas;
 }
 
-export function createGLCanvas (id, isDebug) {
+export function createGLCanvas(id, isDebug) {
   const canvas = createCanvas(id, isDebug);
   const gl = initGL(canvas, id);
   return gl;
 }
 
-export function createShaders (gl, shaders) {
+export function createShaders(gl, shaders) {
   return twgl.createProgramInfo(gl, [shaders.vs, shaders.fs]);
 }
 
-export function drawBuffer (gl, programInfo, bufferInfo, uniforms) {
+export function drawBuffer(gl, programInfo, bufferInfo, uniforms) {
   gl.useProgram(programInfo.program);
 
   twgl.setUniforms(programInfo, uniforms);
@@ -40,28 +40,32 @@ export function drawBuffer (gl, programInfo, bufferInfo, uniforms) {
 
 /* ======== Utility functions ======== */
 
-export function degToRad (degrees) {
+export function degToRad(degrees) {
   return degrees * Math.PI / 180;
 }
 
 /* ======== Private functions ======== */
 
-function initGL (canvas, id) {
+function initGL(canvas, id) {
   const gl = canvas.getContext('webgl2');
   if (!gl) {
-    window.alert("Couldn't get WebGL context");
+    window.alert('Couldn\'t get WebGL context');
   }
   window[`gl${id}`] = gl;
   return gl;
 }
 
-function addDebugControls (id) {
+function addDebugControls(id) {
   const el = document.getElementById(`c${id}`);
   const debugHtml = `
 <div id="debug${id}">
-    <input type="range" min="-360" max="360" value="0" step="5" class="slider" id="rotationSlider${id}" oninput="document.getElementById('rotationText${id}').innerHTML = this.value;">
+    <input type="range" min="-360" max="360" value="0" step="5" class="slider" id="rotationSlider${
+      id}" oninput="document.getElementById('rotationText${
+      id}').innerHTML = this.value;">
     <span id="rotationText${id}">0</span>
-      <input type="range" min="0" max="20" value="10" step="1" class="slider" id="zoomSlider${id}" oninput="document.getElementById('zoomText${id}').innerHTML = this.value;">
+      <input type="range" min="0" max="20" value="10" step="1" class="slider" id="zoomSlider${
+      id}" oninput="document.getElementById('zoomText${
+      id}').innerHTML = this.value;">
       <span id="zoomText${id}">0</span>
       <input type="checkbox" id="topDownCheckbox${id}">
 </div>

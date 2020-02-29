@@ -1,7 +1,7 @@
 'use strict';
 
-import { Vector3, Matrix4 } from 'math.gl';
-import { createCanvas } from './sceneHelpers.js';
+import {Vector3, Matrix4} from 'math.gl';
+import {createCanvas} from './sceneHelpers.js';
 
 const sceneId = '2';
 
@@ -36,7 +36,7 @@ void main() {
 }
 `;
 
-export default function render () {
+export default function render() {
   const canvas = createCanvas(sceneId);
   const gl = initGL(canvas);
   const shaderProgram = createShaders(gl);
@@ -44,10 +44,10 @@ export default function render () {
   draw(gl, shaderProgram);
 }
 
-function initGL (canvas) {
+function initGL(canvas) {
   const gl = canvas.getContext('webgl');
   if (!gl) {
-    window.alert("Couldn't get WebGL context");
+    window.alert('Couldn\'t get WebGL context');
   }
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.clearColor(0, 0, 0, 1);
@@ -56,10 +56,8 @@ function initGL (canvas) {
   return gl;
 }
 
-function createShaders (gl) {
-  var vertexShader,
-    fragmentShader,
-    shaderProgram;
+function createShaders(gl) {
+  var vertexShader, fragmentShader, shaderProgram;
 
   vertexShader = getShader(gl, gl.VERTEX_SHADER, vertShaderSource);
   fragmentShader = getShader(gl, gl.FRAGMENT_SHADER, fragShaderSource);
@@ -73,23 +71,35 @@ function createShaders (gl) {
   return shaderProgram;
 }
 
-function createVertexData (gl, program) {
-  var vertices,
-    colors,
-    vertexBuffer,
-    colorBuffer;
+function createVertexData(gl, program) {
+  var vertices, colors, vertexBuffer, colorBuffer;
 
   const z = -2;
   vertices = new Float32Array([
-    0, 0.3, z,
-    -0.3, -0.3, z,
-    0.3, -0.3, z,
+    0,
+    0.3,
+    z,
+    -0.3,
+    -0.3,
+    z,
+    0.3,
+    -0.3,
+    z,
   ]);
 
   colors = new Float32Array([
-    1, 0, 0, 1,
-    0, 1, 0, 1,
-    0, 0, 1, 1,
+    1,
+    0,
+    0,
+    1,
+    0,
+    1,
+    0,
+    1,
+    0,
+    0,
+    1,
+    1,
   ]);
 
   vertexBuffer = gl.createBuffer();
@@ -113,7 +123,7 @@ function createVertexData (gl, program) {
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 }
 
-function getShader (gl, type, shaderSource) {
+function getShader(gl, type, shaderSource) {
   var shader = gl.createShader(type);
   gl.shaderSource(shader, shaderSource);
   gl.compileShader(shader);
@@ -123,7 +133,7 @@ function getShader (gl, type, shaderSource) {
   return shader;
 }
 
-function drawTriangle (gl, program, transform, viewMatrix) {
+function drawTriangle(gl, program, transform, viewMatrix) {
   var primitiveType = gl.TRIANGLES;
   var offset = 0;
   var count = 3;
@@ -138,21 +148,22 @@ function drawTriangle (gl, program, transform, viewMatrix) {
 
   // Projection matrix
   const fov = 45 * Math.PI / 180;
-  var projMatrix = new Matrix4().perspective({ fov, aspect: 1, near: 0.1, far: 10 });
+  var projMatrix =
+      new Matrix4().perspective({fov, aspect: 1, near: 0.1, far: 10});
   const projMatrixLocation = gl.getUniformLocation(program, 'u_proj_matrix');
   gl.uniformMatrix4fv(projMatrixLocation, false, projMatrix);
 
   gl.drawArrays(primitiveType, offset, count);
 }
 
-function draw (gl, program) {
+function draw(gl, program) {
   var transform;
 
   const eye = new Vector3([0, 0, 0]);
   const center = new Vector3([eye.x, eye.y, eye.z - 1]);
   const up = new Vector3([0, 1, 0]);
 
-  const viewMatrix = new Matrix4().lookAt({ eye, center, up });
+  const viewMatrix = new Matrix4().lookAt({eye, center, up});
 
   // Draw left triangle
   transform = new Matrix4().translate([-0.2, 0, 0]);
