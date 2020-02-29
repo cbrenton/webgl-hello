@@ -306,7 +306,7 @@ function setupCamera(gl) {
     center = new Vector3([camera.eye.x, 0, camera.eye.z]);
     up = new Vector3([0, 0, -1]);
   } else {
-    camera.eye = new Vector3([sliderXTranslation, 0, cameraDistance]);
+    camera.eye = new Vector3([sliderXTranslation, 2, cameraDistance]);
     center = new Vector3([camera.eye.x, camera.eye.y, cameraDistance - 4]);
     up = new Vector3([0, 1, 0]);
   }
@@ -331,14 +331,12 @@ function setupLight() {
 }
 
 function setupHUD(scene) {
-  const hud = {};
-
-  hud.viewMatrix = scene.camera.viewMatrix;
-  hud.projMatrix = new Matrix4().ortho(
-      {left: -1, right: 1, bottom: -1, top: 1, near: 0.1, far: 10});
-  hud.texture = scene.textures.checkerboardTexture;
-
-  return hud;
+  return {
+    viewMatrix: new Matrix4(),
+    projMatrix: new Matrix4().ortho(
+        {left: -1, right: 1, bottom: -1, top: 1, near: 0.1, far: 10}),
+    texture: scene.textures.checkerboardTexture,
+  };
 }
 
 function createTextures(gl) {
