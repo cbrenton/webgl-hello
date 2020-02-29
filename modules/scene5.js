@@ -1,7 +1,7 @@
 'use strict';
 
 import { Vector3, Matrix4 } from 'math.gl';
-import { createGLCanvas, degToRad } from './sceneHelpers.js';
+import { createGLCanvas, createShaders, degToRad } from './sceneHelpers.js';
 import * as twgl from 'twgl.js';
 
 const sceneId = '5';
@@ -123,10 +123,6 @@ export default function render () {
   const scene = createScene(gl);
   scene.textures = createTextures(gl);
   draw(gl, programInfos, scene, performance.now());
-}
-
-function createShaders (gl, shaders) {
-  return twgl.createProgramInfo(gl, [shaders.vs, shaders.fs]);
 }
 
 function createTextures (gl) {

@@ -1,3 +1,7 @@
+import * as twgl from 'twgl.js';
+
+/* ======== Module exports ======== */
+
 export function createCanvas (id, isDebug) {
   isDebug = isDebug || false;
   const el = document.createElement('div');
@@ -20,6 +24,16 @@ export function createGLCanvas (id, isDebug) {
   return gl;
 }
 
+export function createShaders (gl, shaders) {
+  return twgl.createProgramInfo(gl, [shaders.vs, shaders.fs]);
+}
+
+export function degToRad (degrees) {
+  return degrees * Math.PI / 180;
+}
+
+/* ======== Private functions ======== */
+
 function initGL (canvas, id) {
   const gl = canvas.getContext('webgl2');
   if (!gl) {
@@ -27,10 +41,6 @@ function initGL (canvas, id) {
   }
   window[`gl${id}`] = gl;
   return gl;
-}
-
-export function degToRad (degrees) {
-  return degrees * Math.PI / 180;
 }
 
 function addDebugControls (id) {
