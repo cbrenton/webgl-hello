@@ -121,7 +121,6 @@ export default function render() {
     checkerboard: util.createShaders(gl, planeShader),
   };
   const scene = createScene(gl);
-  scene.textures = createTextures(gl);
   drawFrame(gl, programInfos, scene, performance.now());
 }
 
@@ -165,6 +164,7 @@ function createScene(gl) {
       bufferInfo: cubeBufferInfo,
     },
     camera: setupCamera(gl),
+    textures: createTextures(gl),
   };
 
   return scene;
