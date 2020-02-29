@@ -1,6 +1,6 @@
 import * as twgl from 'twgl.js';
 
-/* ======== Module exports ======== */
+/* ======== GL helper functions ======== */
 
 export function createCanvas (id, isDebug) {
   isDebug = isDebug || false;
@@ -27,6 +27,18 @@ export function createGLCanvas (id, isDebug) {
 export function createShaders (gl, shaders) {
   return twgl.createProgramInfo(gl, [shaders.vs, shaders.fs]);
 }
+
+export function drawBuffer (gl, programInfo, bufferInfo, uniforms) {
+  gl.useProgram(programInfo.program);
+
+  twgl.setUniforms(programInfo, uniforms);
+
+  twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
+
+  twgl.drawBufferInfo(gl, bufferInfo);
+}
+
+/* ======== Utility functions ======== */
 
 export function degToRad (degrees) {
   return degrees * Math.PI / 180;

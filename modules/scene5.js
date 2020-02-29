@@ -1,7 +1,7 @@
 'use strict';
 
 import { Vector3, Matrix4 } from 'math.gl';
-import { createGLCanvas, createShaders, degToRad } from './sceneHelpers.js';
+import * as util from './sceneHelpers.js';
 import * as twgl from 'twgl.js';
 
 const sceneId = '5';
@@ -115,10 +115,10 @@ void main() {
 const startTime = performance.now();
 
 export default function render () {
-  const gl = createGLCanvas(sceneId, true);
+  const gl = util.createGLCanvas(sceneId, true);
   const programInfos = {
-    phong: createShaders(gl, phongShader),
-    checkerboard: createShaders(gl, planeShader),
+    phong: util.createShaders(gl, phongShader),
+    checkerboard: util.createShaders(gl, planeShader),
   };
   const scene = createScene(gl);
   scene.textures = createTextures(gl);
@@ -184,16 +184,6 @@ function createScene (gl) {
   return scene;
 }
 
-function drawSomething (gl, programInfo, bufferInfo, uniforms) {
-  gl.useProgram(programInfo.program);
-
-  twgl.setUniforms(programInfo, uniforms);
-
-  twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
-
-  twgl.drawBufferInfo(gl, bufferInfo);
-}
-
 function drawScene (gl, projMatrix, viewMatrix, programInfos, scene, timestamp) {
   const elapsedMs = timestamp - startTime;
   const msPerRotation = 8000;
@@ -207,7 +197,7 @@ function drawScene (gl, projMatrix, viewMatrix, programInfos, scene, timestamp) 
     u_viewMatrix: viewMatrix,
     u_projectionMatrix: projMatrix,
   };
-  drawSomething(gl, programInfos.phong, scene.sphere.bufferInfo, sphereUniforms);
+  util.drawBuffer(gl, programInfos.phong, scene.sphere.bufferInfo, sphereUniforms);
 
   // Draw cube
   const cubeTransform = new Matrix4().translate([-3, 0, zCenter]).rotateY(rotationRadians);
@@ -219,7 +209,7 @@ function drawScene (gl, projMatrix, viewMatrix, programInfos, scene, timestamp) 
     u_lightPos: new Vector3([0, 100, 100]),
     u_cameraPos: cameraPos,
   };
-  drawSomething(gl, programInfos.phong, scene.cube.bufferInfo, cubeUniforms);
+  util.drawBuffer(gl, programInfos.phong, scene.cube.bufferInfo, cubeUniforms);
 
   // Draw plane
   const planeTransform = new Matrix4().translate([0, -3, zCenter]).scale(20);
@@ -229,7 +219,7 @@ function drawScene (gl, projMatrix, viewMatrix, programInfos, scene, timestamp) 
     u_projectionMatrix: projMatrix,
     u_texture: scene.textures.checkerboardTexture,
   };
-  drawSomething(gl, programInfos.checkerboard, scene.plane.bufferInfo, planeUniforms);
+  util.drawBuffer(gl, programInfos.checkerboard, scene.plane.bufferInfo, planeUniforms);
 }
 
 function draw (gl, programInfos, scene, timestamp) {
@@ -273,7 +263,7 @@ function draw (gl, programInfos, scene, timestamp) {
 
   const viewMatrix = new Matrix4().lookAt({ eye: scene.camera.eye, center, up });
 
-  const fov = degToRad(45);
+  const fov = util.degToRad(45);
   const aspect = parseFloat(gl.canvas.clientWidth) / parseFloat(gl.canvas.clientHeight);
   const projMatrix = new Matrix4().perspective({ fov, aspect, near: 0.1, far: 100 });
   projMatrix.translate([0, -2, 0]); // @TODO: why does this need to be negative?
