@@ -221,7 +221,8 @@ function drawScene(gl, programInfos, scene, timestamp) {
     u_matColor: scene.sphere.color,
     u_lightPos: scene.light.position,
     u_lightColor: scene.light.color,
-    u_cameraPos: scene.camera.eye,
+    u_cameraPos:
+        new Matrix4().copy(scene.camera.viewMatrix).transform(scene.camera.eye),
   };
   util.drawBuffer(
       gl, programInfos.phong, scene.sphere.bufferInfo, sphereUniforms);
@@ -236,7 +237,8 @@ function drawScene(gl, programInfos, scene, timestamp) {
     u_matColor: scene.cube.color,
     u_lightPos: scene.light.position,
     u_lightColor: scene.light.color,
-    u_cameraPos: scene.camera.eye,
+    u_cameraPos:
+        new Matrix4().copy(scene.camera.viewMatrix).transform(scene.camera.eye),
   };
   util.drawBuffer(gl, programInfos.phong, scene.cube.bufferInfo, cubeUniforms);
 
@@ -316,8 +318,6 @@ function setupCamera(gl) {
       parseFloat(gl.canvas.clientWidth) / parseFloat(gl.canvas.clientHeight);
   camera.projMatrix =
       new Matrix4().perspective({fov, aspect, near: 0.1, far: 100});
-  camera.projMatrix.translate(
-      [0, -2, 0]);  // @TODO: why does this need to be negative?
   camera.projMatrix.rotateX(Math.PI / 20);
 
   return camera;
