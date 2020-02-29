@@ -239,6 +239,8 @@ function drawScene(gl, programInfos, scene, timestamp) {
     u_modelMatrix: sphereTransform,
     u_viewMatrix: scene.camera.viewMatrix,
     u_projectionMatrix: scene.camera.projMatrix,
+    u_lightPos: new Vector3([0, 100, 100]),
+    u_cameraPos: cameraPos,
   };
   util.drawBuffer(
       gl, programInfos.phong, scene.sphere.bufferInfo, sphereUniforms);
