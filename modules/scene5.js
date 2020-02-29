@@ -3,6 +3,7 @@
 import {Vector3, Matrix4} from 'math.gl';
 import * as util from './sceneHelpers.js';
 import * as twgl from 'twgl.js';
+import {Camera} from './camera.js';
 
 const sceneId = '5';
 
@@ -221,8 +222,7 @@ function drawScene(gl, programInfos, scene, timestamp) {
     u_matColor: scene.sphere.color,
     u_lightPos: scene.light.position,
     u_lightColor: scene.light.color,
-    u_cameraPos:
-        new Matrix4().copy(scene.camera.viewMatrix).transform(scene.camera.eye),
+    u_cameraPos: scene.camera.worldPosition(),
   };
   util.drawBuffer(
       gl, programInfos.phong, scene.sphere.bufferInfo, sphereUniforms);
@@ -237,8 +237,7 @@ function drawScene(gl, programInfos, scene, timestamp) {
     u_matColor: scene.cube.color,
     u_lightPos: scene.light.position,
     u_lightColor: scene.light.color,
-    u_cameraPos:
-        new Matrix4().copy(scene.camera.viewMatrix).transform(scene.camera.eye),
+    u_cameraPos: scene.camera.worldPosition(),
   };
   util.drawBuffer(gl, programInfos.phong, scene.cube.bufferInfo, cubeUniforms);
 
@@ -276,51 +275,10 @@ function drawHUD(gl, programInfos, scene) {
 }
 
 function setupCamera(gl) {
-  const camera = {};
-
-  const rotationSlider = document.getElementById(`rotationSlider${sceneId}`);
-  const topDownCheckbox = document.getElementById(`topDownCheckbox${sceneId}`);
-  const zoomSlider = document.getElementById(`zoomSlider${sceneId}`);
-
-  let rotationDeg = 0;
-  if (rotationSlider) {
-    rotationDeg = rotationSlider.value / 36;
-  }
-  const sliderXTranslation = rotationDeg / 10;
-
-  let useTopDown = false;
-  if (topDownCheckbox) {
-    useTopDown = topDownCheckbox.checked;
-  }
-
-  let cameraDistance = 10;
-  if (zoomSlider) {
-    cameraDistance = zoomSlider.max - zoomSlider.value;
-  }
-
-  let center, up;
-
-  if (useTopDown) {
-    // Top down camera
-    camera.eye = new Vector3([sliderXTranslation, 0, -4]);
-    center = new Vector3([camera.eye.x, 0, camera.eye.z]);
-    up = new Vector3([0, 0, -1]);
-  } else {
-    camera.eye = new Vector3([sliderXTranslation, 2, cameraDistance]);
-    center = new Vector3([camera.eye.x, camera.eye.y, cameraDistance - 4]);
-    up = new Vector3([0, 1, 0]);
-  }
-
-  camera.viewMatrix = new Matrix4().lookAt({eye: camera.eye, center, up});
-
-  const fov = util.degToRad(45);
-  const aspect =
-      parseFloat(gl.canvas.clientWidth) / parseFloat(gl.canvas.clientHeight);
-  camera.projMatrix =
-      new Matrix4().perspective({fov, aspect, near: 0.1, far: 100});
-  camera.projMatrix.rotateX(Math.PI / 20);
-
-  return camera;
+  const position = new Vector3([0, 2, 10]);
+  const target = new Vector3([0, 0, -4]);
+  const fovDegrees = 45;
+  return new Camera(gl, position, target, fovDegrees);
 }
 
 function setupLight() {
