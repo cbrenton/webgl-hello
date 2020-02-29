@@ -6,7 +6,10 @@ import * as twgl from 'twgl.js';
 
 const sceneId = '5';
 
-const phongShader = {
+window.showHUD = true;
+
+const shaders = {};
+shaders.phongShader = {
   vs: `#version 300 es
 in vec4 a_position;
 in vec3 a_normal;
@@ -35,8 +38,7 @@ void main() {
   v_surfToLight = u_lightPos - surfaceWorldPos;
 
   v_surfToCamera = u_cameraPos - surfaceWorldPos;
-}
-`,
+}`,
   fs: `#version 300 es
 precision mediump float;
 
@@ -73,11 +75,10 @@ void main() {
 
   vec3 result = (ambient + specular + diffuse) * matColor;
   finalColor = vec4(result, 1.0);
-}
-`,
+}`,
 };
 
-const planeShader = {
+shaders.planeShader = {
   vs: `#version 300 es
 in vec4 a_position;
 in vec2 a_texcoord;
@@ -90,10 +91,11 @@ out vec2 v_texcoord;
 
 void main() {
   mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
+
   gl_Position = mvp * a_position;
+
   v_texcoord = a_texcoord;
-}
-`,
+}`,
   fs: `#version 300 es
 precision mediump float;
 
@@ -108,8 +110,41 @@ void main() {
   finalColor = vec4(v_texcoord, 1, 1);
   vec4 colorMult = vec4(0.6, 0.6, 0.6, 1);
   finalColor = texture(u_texture, v_texcoord) * colorMult;
-}
-`,
+}`,
+};
+
+shaders.hud = {
+  vs: `#version 300 es
+in vec4 a_position;
+in vec2 a_texcoord;
+
+uniform mat4 u_modelMatrix;
+uniform mat4 u_viewMatrix;
+uniform mat4 u_projectionMatrix;
+
+out vec2 v_texcoord;
+
+void main() {
+  mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
+
+  gl_Position = mvp * a_position;
+
+  gl_Position.z = 0.0;
+
+  v_texcoord = a_texcoord;
+}`,
+  fs: `#version 300 es
+precision mediump float;
+
+in vec2 v_texcoord;
+
+uniform sampler2D u_texture;
+
+out vec4 finalColor;
+
+void main() {
+  finalColor = texture(u_texture, v_texcoord);
+}`
 };
 
 const startTime = performance.now();
@@ -117,34 +152,12 @@ const startTime = performance.now();
 export default function render() {
   const gl = util.createGLCanvas(sceneId, true);
   const programInfos = {
-    phong: util.createShaders(gl, phongShader),
-    checkerboard: util.createShaders(gl, planeShader),
+    phong: util.createShaders(gl, shaders.phongShader),
+    checkerboard: util.createShaders(gl, shaders.planeShader),
+    hud: util.createShaders(gl, shaders.hud),
   };
   const scene = createScene(gl);
   drawFrame(gl, programInfos, scene, performance.now());
-}
-
-function createTextures(gl) {
-  const textures = {};
-
-  const checkerboardTexture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, checkerboardTexture);
-  gl.texImage2D(
-      gl.TEXTURE_2D, 0, gl.LUMINANCE, 8, 8, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE,
-      new Uint8Array([
-        0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xCC, 0xFF, 0xCC,
-        0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-        0xFF, 0xCC, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xFF,
-        0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xCC, 0xFF, 0xCC, 0xFF,
-        0xCC, 0xFF, 0xCC, 0xFF, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-        0xCC, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-      ]));
-  gl.generateMipmap(gl.TEXTURE_2D);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-  textures.checkerboardTexture = checkerboardTexture;
-
-  return textures;
 }
 
 function createScene(gl) {
@@ -152,6 +165,8 @@ function createScene(gl) {
   const sphereBufferInfo = twgl.primitives.createSphereBufferInfo(gl, 1, 12, 6);
   const planeBufferInfo = twgl.primitives.createPlaneBufferInfo(gl, 2, 2);
   const cubeBufferInfo = twgl.primitives.createCubeBufferInfo(gl, 2);
+  const debugWindowBufferInfo =
+      twgl.primitives.createPlaneBufferInfo(gl, 0.9, 0.9);
 
   const scene = {
     sphere: {
@@ -163,11 +178,95 @@ function createScene(gl) {
     cube: {
       bufferInfo: cubeBufferInfo,
     },
-    camera: setupCamera(gl),
-    textures: createTextures(gl),
+    debugWindow: {
+      bufferInfo: debugWindowBufferInfo,
+    },
   };
 
+  scene.camera = setupCamera(gl);
+  scene.textures = createTextures(gl);
+  scene.hud = setupHUD(scene);
+
   return scene;
+}
+
+function drawFrame(gl, programInfos, scene, timestamp) {
+  drawScene(gl, programInfos, scene, timestamp);
+
+  requestAnimationFrame(function(timestamp) {
+    drawFrame(gl, programInfos, scene, timestamp);
+  });
+}
+
+function drawScene(gl, programInfos, scene, timestamp) {
+  const elapsedMs = timestamp - startTime;
+  const msPerRotation = 8000;
+  const rotationRadians = 2 * Math.PI * (elapsedMs / msPerRotation);
+  const zCenter = -4;
+  const cameraPos =
+      new Matrix4().copy(scene.camera.viewMatrix).transform(scene.camera.eye);
+
+  // Set up viewport and clear color and depth buffers
+  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+  gl.clearColor(0, 0, 0, 1);
+  gl.enable(gl.DEPTH_TEST);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  // Draw sphere
+  const sphereTransform =
+      new Matrix4().translate([3, 0, zCenter]).rotateY(rotationRadians);
+  const sphereUniforms = {
+    u_modelMatrix: sphereTransform,
+    u_viewMatrix: scene.camera.viewMatrix,
+    u_projectionMatrix: scene.camera.projMatrix,
+    u_lightPos: new Vector3([0, 100, 100]),
+    u_cameraPos: cameraPos,
+  };
+  util.drawBuffer(
+      gl, programInfos.phong, scene.sphere.bufferInfo, sphereUniforms);
+
+  // Draw cube
+  const cubeTransform =
+      new Matrix4().translate([-3, 0, zCenter]).rotateY(rotationRadians);
+  const cubeUniforms = {
+    u_modelMatrix: cubeTransform,
+    u_viewMatrix: scene.camera.viewMatrix,
+    u_projectionMatrix: scene.camera.projMatrix,
+    u_lightPos: new Vector3([0, 100, 100]),
+    u_cameraPos: cameraPos,
+  };
+  util.drawBuffer(gl, programInfos.phong, scene.cube.bufferInfo, cubeUniforms);
+
+  // Draw plane
+  const planeTransform = new Matrix4().translate([0, -3, zCenter]).scale(20);
+  const planeUniforms = {
+    u_modelMatrix: planeTransform,
+    u_viewMatrix: scene.camera.viewMatrix,
+    u_projectionMatrix: scene.camera.projMatrix,
+    u_texture: scene.textures.checkerboardTexture,
+  };
+  util.drawBuffer(
+      gl, programInfos.checkerboard, scene.plane.bufferInfo, planeUniforms);
+
+  drawHUD(gl, programInfos, scene);
+}
+
+function drawHUD(gl, programInfos, scene) {
+  if (!window.showHUD) {
+    return;
+  }
+  // Draw texture debug window
+  const hudTransform = new Matrix4();
+  hudTransform.translate([0.5, 0.5, 0]);
+  hudTransform.rotateX(util.degToRad(90));
+  const hudUniforms = {
+    u_modelMatrix: hudTransform,
+    u_viewMatrix: scene.hud.viewMatrix,
+    u_projectionMatrix: scene.hud.projMatrix,
+    u_texture: scene.hud.texture,
+  };
+  util.drawBuffer(
+      gl, programInfos.hud, scene.debugWindow.bufferInfo, hudUniforms);
 }
 
 function setupCamera(gl) {
@@ -220,61 +319,36 @@ function setupCamera(gl) {
   return camera;
 }
 
-function drawScene(gl, programInfos, scene, timestamp) {
-  const elapsedMs = timestamp - startTime;
-  const msPerRotation = 8000;
-  const rotationRadians = 2 * Math.PI * (elapsedMs / msPerRotation);
-  const zCenter = -4;
+function setupHUD(scene) {
+  const hud = {};
 
-  // Set up viewport and clear color and depth buffers
-  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-  gl.clearColor(0, 0, 0, 1);
-  gl.enable(gl.DEPTH_TEST);
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  hud.viewMatrix = scene.camera.viewMatrix;
+  hud.projMatrix = new Matrix4().ortho(
+      {left: -1, right: 1, bottom: -1, top: 1, near: 0.1, far: 10});
+  hud.texture = scene.textures.checkerboardTexture;
 
-  // Draw sphere
-  const sphereTransform =
-      new Matrix4().translate([3, 0, zCenter]).rotateY(rotationRadians);
-  const sphereUniforms = {
-    u_modelMatrix: sphereTransform,
-    u_viewMatrix: scene.camera.viewMatrix,
-    u_projectionMatrix: scene.camera.projMatrix,
-    u_lightPos: new Vector3([0, 100, 100]),
-    u_cameraPos: cameraPos,
-  };
-  util.drawBuffer(
-      gl, programInfos.phong, scene.sphere.bufferInfo, sphereUniforms);
-
-  // Draw cube
-  const cubeTransform =
-      new Matrix4().translate([-3, 0, zCenter]).rotateY(rotationRadians);
-  const cameraPos =
-      new Matrix4().copy(scene.camera.viewMatrix).transform(scene.camera.eye);
-  const cubeUniforms = {
-    u_modelMatrix: cubeTransform,
-    u_viewMatrix: scene.camera.viewMatrix,
-    u_projectionMatrix: scene.camera.projMatrix,
-    u_lightPos: new Vector3([0, 100, 100]),
-    u_cameraPos: cameraPos,
-  };
-  util.drawBuffer(gl, programInfos.phong, scene.cube.bufferInfo, cubeUniforms);
-
-  // Draw plane
-  const planeTransform = new Matrix4().translate([0, -3, zCenter]).scale(20);
-  const planeUniforms = {
-    u_modelMatrix: planeTransform,
-    u_viewMatrix: scene.camera.viewMatrix,
-    u_projectionMatrix: scene.camera.projMatrix,
-    u_texture: scene.textures.checkerboardTexture,
-  };
-  util.drawBuffer(
-      gl, programInfos.checkerboard, scene.plane.bufferInfo, planeUniforms);
+  return hud;
 }
 
-function drawFrame(gl, programInfos, scene, timestamp) {
-  drawScene(gl, programInfos, scene, timestamp);
+function createTextures(gl) {
+  const textures = {};
 
-  requestAnimationFrame(function(timestamp) {
-    drawFrame(gl, programInfos, scene, timestamp);
-  });
+  const checkerboardTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, checkerboardTexture);
+  gl.texImage2D(
+      gl.TEXTURE_2D, 0, gl.LUMINANCE, 8, 8, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE,
+      new Uint8Array([
+        0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xCC, 0xFF, 0xCC,
+        0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+        0xFF, 0xCC, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xFF,
+        0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xCC, 0xFF, 0xCC, 0xFF,
+        0xCC, 0xFF, 0xCC, 0xFF, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+        0xCC, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+      ]));
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+  textures.checkerboardTexture = checkerboardTexture;
+
+  return textures;
 }
