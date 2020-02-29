@@ -34,10 +34,11 @@ void main() {
   v_normal = mat3(modelInverseTranspose) * a_normal;
 
   vec3 surfaceWorldPos = (u_modelMatrix * a_position).xyz;
+  vec3 cameraWorldPos = mat3(u_modelMatrix) * u_cameraPos;
 
   v_surfToLight = u_lightPos - surfaceWorldPos;
 
-  v_surfToCamera = u_cameraPos - surfaceWorldPos;
+  v_surfToCamera = cameraWorldPos - surfaceWorldPos;
 }`,
   fs: `#version 300 es
 precision mediump float;
@@ -203,8 +204,6 @@ function drawScene(gl, programInfos, scene, timestamp) {
   const msPerRotation = 8000;
   const rotationRadians = 2 * Math.PI * (elapsedMs / msPerRotation);
   const zCenter = -4;
-  const cameraPos =
-      new Matrix4().copy(scene.camera.viewMatrix).transform(scene.camera.eye);
 
   // Set up viewport and clear color and depth buffers
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -220,7 +219,7 @@ function drawScene(gl, programInfos, scene, timestamp) {
     u_viewMatrix: scene.camera.viewMatrix,
     u_projectionMatrix: scene.camera.projMatrix,
     u_lightPos: new Vector3([0, 100, 100]),
-    u_cameraPos: cameraPos,
+    u_cameraPos: scene.camera.eye,
   };
   util.drawBuffer(
       gl, programInfos.phong, scene.sphere.bufferInfo, sphereUniforms);
@@ -233,7 +232,7 @@ function drawScene(gl, programInfos, scene, timestamp) {
     u_viewMatrix: scene.camera.viewMatrix,
     u_projectionMatrix: scene.camera.projMatrix,
     u_lightPos: new Vector3([0, 100, 100]),
-    u_cameraPos: cameraPos,
+    u_cameraPos: scene.camera.eye,
   };
   util.drawBuffer(gl, programInfos.phong, scene.cube.bufferInfo, cubeUniforms);
 
