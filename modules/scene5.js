@@ -47,7 +47,8 @@ in vec3 v_normal;
 in vec3 v_surfToLight;
 in vec3 v_surfToCamera;
 
-uniform vec4 u_matColor;
+uniform vec3 u_matColor;
+uniform vec3 u_lightColor;
 
 out vec4 finalColor;
 
@@ -58,23 +59,20 @@ void main() {
   vec3 surfToCameraDir = normalize(v_surfToCamera);
   vec3 halfVector = normalize(surfToLightDir + surfToCameraDir);
 
-  vec3 lightColor = vec3(1, 1, 1);
-  vec3 matColor = vec3(1, 0, 0);
-
   // Diffuse
   float diffuseIntensity = dot(normal, surfToLightDir);
-  vec3 diffuse = lightColor * diffuseIntensity;
+  vec3 diffuse = u_lightColor * diffuseIntensity;
 
   // Specular
-  float shininess = 50.0;
+  float shininess = 32.0;
   float specularStrength = 1.0;
-  vec3 specular = specularStrength * pow(max(dot(normal, halfVector), 0.0), shininess) * lightColor ;
+  vec3 specular = specularStrength * pow(max(dot(normal, halfVector), 0.0), shininess) * u_lightColor;
 
   // Ambient
   float ambientStrength = 0.1;
-  vec3 ambient = ambientStrength * lightColor;
+  vec3 ambient = ambientStrength * u_lightColor;
 
-  vec3 result = (ambient + specular + diffuse) * matColor;
+  vec3 result = (ambient + specular + diffuse) * u_matColor;
   finalColor = vec4(result, 1.0);
 }`,
 };
@@ -102,15 +100,13 @@ precision mediump float;
 
 in vec2 v_texcoord;
 
-uniform vec4 u_matColor;
+uniform vec3 u_matColor;
 uniform sampler2D u_texture;
 
 out vec4 finalColor;
 
 void main() {
-  finalColor = vec4(v_texcoord, 1, 1);
-  vec4 colorMult = vec4(0.6, 0.6, 0.6, 1);
-  finalColor = texture(u_texture, v_texcoord) * colorMult;
+  finalColor = texture(u_texture, v_texcoord) * vec4(u_matColor, 1);
 }`,
 };
 
@@ -172,12 +168,15 @@ function createScene(gl) {
   const scene = {
     sphere: {
       bufferInfo: sphereBufferInfo,
+      color: new Vector3([0.8, 0.2, 0.2]),
     },
     plane: {
       bufferInfo: planeBufferInfo,
+      color: new Vector3([0.3, 0.3, 0.3]),
     },
     cube: {
       bufferInfo: cubeBufferInfo,
+      color: new Vector3([0.2, 0.8, 0.2]),
     },
     debugWindow: {
       bufferInfo: debugWindowBufferInfo,
@@ -219,7 +218,9 @@ function drawScene(gl, programInfos, scene, timestamp) {
     u_modelMatrix: sphereTransform,
     u_viewMatrix: scene.camera.viewMatrix,
     u_projectionMatrix: scene.camera.projMatrix,
+    u_matColor: scene.sphere.color,
     u_lightPos: scene.light.position,
+    u_lightColor: scene.light.color,
     u_cameraPos: scene.camera.eye,
   };
   util.drawBuffer(
@@ -232,7 +233,9 @@ function drawScene(gl, programInfos, scene, timestamp) {
     u_modelMatrix: cubeTransform,
     u_viewMatrix: scene.camera.viewMatrix,
     u_projectionMatrix: scene.camera.projMatrix,
+    u_matColor: scene.cube.color,
     u_lightPos: scene.light.position,
+    u_lightColor: scene.light.color,
     u_cameraPos: scene.camera.eye,
   };
   util.drawBuffer(gl, programInfos.phong, scene.cube.bufferInfo, cubeUniforms);
@@ -244,6 +247,7 @@ function drawScene(gl, programInfos, scene, timestamp) {
     u_viewMatrix: scene.camera.viewMatrix,
     u_projectionMatrix: scene.camera.projMatrix,
     u_texture: scene.textures.checkerboardTexture,
+    u_matColor: scene.plane.color,
   };
   util.drawBuffer(
       gl, programInfos.checkerboard, scene.plane.bufferInfo, planeUniforms);
@@ -320,11 +324,10 @@ function setupCamera(gl) {
 }
 
 function setupLight() {
-  const light = {};
-
-  light.position = new Vector3([0, 100, 100]);
-
-  return light;
+  return {
+    position: new Vector3([0, 100, 100]),
+    color: new Vector3([1, 1, 1]),
+  };
 }
 
 function setupHUD(scene) {
