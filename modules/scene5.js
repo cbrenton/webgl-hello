@@ -185,6 +185,7 @@ function createScene(gl) {
   };
 
   scene.camera = setupCamera(gl);
+  scene.light = setupLight(gl);
   scene.textures = createTextures(gl);
   scene.hud = setupHUD(scene);
 
@@ -218,7 +219,7 @@ function drawScene(gl, programInfos, scene, timestamp) {
     u_modelMatrix: sphereTransform,
     u_viewMatrix: scene.camera.viewMatrix,
     u_projectionMatrix: scene.camera.projMatrix,
-    u_lightPos: new Vector3([0, 100, 100]),
+    u_lightPos: scene.light.position,
     u_cameraPos: scene.camera.eye,
   };
   util.drawBuffer(
@@ -231,7 +232,7 @@ function drawScene(gl, programInfos, scene, timestamp) {
     u_modelMatrix: cubeTransform,
     u_viewMatrix: scene.camera.viewMatrix,
     u_projectionMatrix: scene.camera.projMatrix,
-    u_lightPos: new Vector3([0, 100, 100]),
+    u_lightPos: scene.light.position,
     u_cameraPos: scene.camera.eye,
   };
   util.drawBuffer(gl, programInfos.phong, scene.cube.bufferInfo, cubeUniforms);
@@ -316,6 +317,14 @@ function setupCamera(gl) {
   camera.projMatrix.rotateX(Math.PI / 20);
 
   return camera;
+}
+
+function setupLight() {
+  const light = {};
+
+  light.position = new Vector3([0, 100, 100]);
+
+  return light;
 }
 
 function setupHUD(scene) {
