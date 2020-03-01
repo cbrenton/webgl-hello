@@ -29,7 +29,7 @@ Hello world exercises for WebGL
 - [x] This scene should demonstrate simple diffuse lighting.
 - [x] The scene should demonstrate phong lighting (interpolated normals).
 - [x] The plane should be texture mapped.
-- [ ] The scene should display accurate shadows via shadow mapping.
+- [x] The scene should display accurate shadows via shadow mapping.
 
 ## Scene 6
 ### Create a scene with bunny.obj and a plane and a single light.

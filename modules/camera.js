@@ -4,10 +4,10 @@ import {Vector3, Matrix4} from 'math.gl';
 import {degToRad} from './sceneHelpers.js';
 
 export class Camera {
-  constructor(gl, position, target, fovDegrees) {
+  constructor(gl, position, target, up, fovDegrees) {
     this.position = position;
     this.target = target;
-    this.up = new Vector3([0, 1, 0]);
+    this.up = up;
     this.fov = degToRad(fovDegrees);
     this.aspect =
         parseFloat(gl.canvas.clientWidth) / parseFloat(gl.canvas.clientHeight);

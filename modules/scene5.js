@@ -8,54 +8,74 @@ import {DirectionalLight} from './light.js';
 
 const sceneId = '5';
 
-window.showHUD = true;
-
 const shaders = {};
 shaders.phongShader = {
   vs: `#version 300 es
 in vec4 a_position;
 in vec3 a_normal;
+in vec2 a_texcoord;
 
 uniform mat4 u_modelMatrix;
 uniform mat4 u_viewMatrix;
 uniform mat4 u_projectionMatrix;
 uniform vec3 u_reverseLightDir;
 uniform vec3 u_cameraPos;
+uniform mat4 u_depthMVP; // @TODO: this name isn't accurate
 
+out vec2 v_texcoord;
 out vec3 v_normal;
 out vec3 v_surfToLight;
 out vec3 v_surfToCamera;
+out vec4 v_shadowCoord;
 
 void main() {
   mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
-
-  mat4 modelInverseTranspose = transpose(inverse(u_modelMatrix));
-
   gl_Position = mvp * a_position;
 
+  mat4 modelInverseTranspose = transpose(inverse(u_modelMatrix));
   v_normal = mat3(modelInverseTranspose) * a_normal;
 
-  vec3 surfaceWorldPos = (u_modelMatrix * a_position).xyz;
+  vec3 surfaceWorldPos = vec3(u_modelMatrix * a_position);
   vec3 cameraWorldPos = mat3(u_modelMatrix) * u_cameraPos;
 
   v_surfToLight = u_reverseLightDir;
-
   v_surfToCamera = cameraWorldPos - surfaceWorldPos;
+
+  vec4 fragPos = u_modelMatrix * a_position;
+  v_shadowCoord = u_depthMVP * fragPos;
+
+  v_texcoord = a_texcoord;
 }`,
   fs: `#version 300 es
 precision mediump float;
 
+in vec2 v_texcoord;
 in vec3 v_normal;
 in vec3 v_surfToLight;
 in vec3 v_surfToCamera;
+in vec4 v_shadowCoord;
 
 uniform vec3 u_matColor;
 uniform vec3 u_lightColor;
+uniform sampler2D u_texture;
+uniform sampler2D u_depthTexture;
 
 out vec4 finalColor;
 
 void main() {
   vec3 normal = normalize(v_normal);
+
+  // Convert 3D world position to clip space(0 to 1)
+  vec3 shadowCoord = v_shadowCoord.xyz / v_shadowCoord.w;
+
+  float cameraDepth = shadowCoord.z;
+  float shadowMapDepth = texture(u_depthTexture, shadowCoord.xy).r;
+
+  float visibility = 1.0;
+
+  if (cameraDepth - shadowMapDepth > 0.000001) {
+    visibility = 0.0;
+  }
 
   vec3 surfToLightDir = normalize(v_surfToLight);
   vec3 surfToCameraDir = normalize(v_surfToCamera);
@@ -74,7 +94,8 @@ void main() {
   float ambientStrength = 0.1;
   vec3 ambient = ambientStrength * u_lightColor;
 
-  vec3 result = (ambient + specular + diffuse) * u_matColor;
+  vec3 texColor = texture(u_texture, v_texcoord).xyz;
+  vec3 result = (ambient + specular + diffuse) * u_matColor * texColor * visibility;
   finalColor = vec4(result, 1.0);
 }`,
 };
@@ -112,7 +133,7 @@ void main() {
 }`,
 };
 
-shaders.hud = {
+shaders.hudShader = {
   vs: `#version 300 es
 in vec4 a_position;
 in vec2 a_texcoord;
@@ -154,6 +175,31 @@ void main() {
 }`,
 };
 
+shaders.simpleColorShader = {
+  vs: `#version 300 es
+in vec4 a_position;
+
+uniform mat4 u_modelMatrix;
+uniform mat4 u_viewMatrix;
+uniform mat4 u_projectionMatrix;
+
+void main() {
+  mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
+  gl_Position = mvp * a_position;
+}
+`,
+  fs: `#version 300 es
+precision mediump float;
+
+out vec4 outColor;
+
+void main() {
+  //outColor = vec4(1);
+  outColor = vec4(gl_FragCoord.z);
+}
+`,
+};
+
 const startTime = performance.now();
 
 export default function render() {
@@ -161,11 +207,16 @@ export default function render() {
   const programInfos = {
     phong: util.createShaders(gl, shaders.phongShader),
     checkerboard: util.createShaders(gl, shaders.planeShader),
-    hud: util.createShaders(gl, shaders.hud),
+    hud: util.createShaders(gl, shaders.hudShader),
   };
+  const depthProgramInfos = {
+    phong: util.createShaders(gl, shaders.simpleColorShader),
+    checkerboard: util.createShaders(gl, shaders.simpleColorShader),
+    hud: util.createShaders(gl, shaders.simpleColorShader),
+  }
 
   const scene = createScene(gl);
-  drawFrame(gl, programInfos, scene, performance.now());
+  drawFrame(gl, programInfos, depthProgramInfos, scene, performance.now());
 }
 
 function createScene(gl) {
@@ -180,7 +231,7 @@ function createScene(gl) {
     sphere: {
       bufferInfo: sphereBufferInfo,
       color: new Vector3([0.8, 0.2, 0.2]),
-      transform: new Matrix4().translate([3, 0, -10]),
+      transform: new Matrix4().translate([3, 0, -6]),
     },
     plane: {
       bufferInfo: planeBufferInfo,
@@ -190,7 +241,7 @@ function createScene(gl) {
     cube: {
       bufferInfo: cubeBufferInfo,
       color: new Vector3([0.2, 0.8, 0.2]),
-      transform: new Matrix4().translate([-3, 0, -4]),
+      transform: new Matrix4().translate([-3, 0, -2]),
     },
     debugWindow: {
       bufferInfo: debugWindowBufferInfo,
@@ -200,14 +251,14 @@ function createScene(gl) {
   scene.camera = setupCamera(gl);
   scene.light = setupLight(gl);
   scene.textures = createTextures(gl);
-  scene.depth = setupDepthBuffer(gl);
+  scene.shadowMap = setupShadowMap(gl);
   scene.hud = setupHUD(scene);
 
   return scene;
 }
 
-function setupDepthBuffer(gl) {
-  const size = 512;
+function setupShadowMap(gl) {
+  const size = 1024;
   const depthFramebuffer = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
 
@@ -234,14 +285,17 @@ function setupDepthBuffer(gl) {
 function setupCamera(gl) {
   const position = new Vector3([0, 2, 10]);
   const target = new Vector3([0, 0, -4]);
+  const up = new Vector3([0, 0, -1]);
   const fovDegrees = 45;
-  return new Camera(gl, position, target, fovDegrees);
+  return new Camera(gl, position, target, up, fovDegrees);
 }
 
 function setupLight(gl) {
-  const lightDirection = new Vector3([0, -100, -100]);
+  const position = new Vector3([100, 100, 100]);
+  const target = new Vector3([0, 0, -4]);
+  const up = new Vector3([0, 0, -1]);
   const color = new Vector3([1, 1, 1]);
-  return new DirectionalLight(gl, lightDirection, color);
+  return new DirectionalLight(gl, position, target, up, color);
 }
 
 function setupHUD(scene) {
@@ -249,7 +303,7 @@ function setupHUD(scene) {
     viewMatrix: new Matrix4(),
     projMatrix: new Matrix4().ortho(
         {left: -1, right: 1, bottom: -1, top: 1, near: 0.1, far: 10}),
-    texture: scene.depth.texture,
+    texture: scene.shadowMap.texture,
     transform:
         new Matrix4().translate([0.5, 0.5, 0]).rotateX(util.degToRad(-90)),
   };
@@ -280,24 +334,32 @@ function createTextures(gl) {
   return textures;
 }
 
-function drawFrame(gl, programInfos, scene, timestamp) {
+function drawFrame(gl, programInfos, depthProgramInfos, scene, timestamp) {
   // Draw to texture
-  gl.bindFramebuffer(gl.FRAMEBUFFER, scene.depth.framebuffer);
-  gl.viewport(0, 0, scene.depth.bufferSize, scene.depth.bufferSize);
-  drawScene(gl, programInfos, scene, scene.camera, timestamp);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, scene.shadowMap.framebuffer);
+  gl.viewport(0, 0, scene.shadowMap.bufferSize, scene.shadowMap.bufferSize);
+  drawScene(
+      gl, depthProgramInfos, scene, scene.light, new Matrix4(), timestamp);
 
   // Draw to canvas
+  const lightMVP = new Matrix4();
+  // Convert from [-1, 1] to [0, 0]
+  lightMVP.translate(new Vector3([0.5, 0.5, 0.5]));
+  lightMVP.scale(new Vector3([0.5, 0.5, 0.5]));
+  lightMVP.multiplyRight(scene.light.projMatrix);
+  lightMVP.multiplyRight(scene.light.viewMatrix);
+
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-  drawScene(gl, programInfos, scene, scene.camera, timestamp);
+  drawScene(gl, programInfos, scene, scene.camera, lightMVP, timestamp);
   drawHUD(gl, programInfos, scene);
 
   requestAnimationFrame(function(timestamp) {
-    drawFrame(gl, programInfos, scene, timestamp);
+    drawFrame(gl, programInfos, depthProgramInfos, scene, timestamp);
   });
 }
 
-function drawScene(gl, programInfos, scene, renderCamera, timestamp) {
+function drawScene(gl, programInfos, scene, renderCamera, lightMVP, timestamp) {
   const elapsedMs = timestamp - startTime;
   const msPerRotation = 8000;
   const rotationRadians = 2 * Math.PI * (elapsedMs / msPerRotation);
@@ -310,6 +372,9 @@ function drawScene(gl, programInfos, scene, renderCamera, timestamp) {
     u_reverseLightDir: new Vector3().copy(scene.light.lightDirection).scale(-1),
     u_lightColor: scene.light.color,
     u_cameraPos: renderCamera.worldPosition(),
+    u_depthMVP: lightMVP,
+    u_depthTexture: scene.shadowMap.texture,
+    u_texture: scene.textures.checkerboardTexture,
   }
 
   // Draw sphere
@@ -341,11 +406,10 @@ function drawScene(gl, programInfos, scene, renderCamera, timestamp) {
     u_modelMatrix: scene.plane.transform,
     u_viewMatrix: renderCamera.viewMatrix,
     u_projectionMatrix: renderCamera.projMatrix,
-    u_texture: scene.textures.checkerboardTexture,
     u_matColor: scene.plane.color,
   };
   util.drawBuffer(
-      gl, programInfos.checkerboard, scene.plane.bufferInfo, planeUniforms,
+      gl, programInfos.phong, scene.plane.bufferInfo, planeUniforms,
       globalUniforms);
 }
 

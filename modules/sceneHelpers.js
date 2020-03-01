@@ -1,5 +1,7 @@
 import * as twgl from 'twgl.js';
 
+window.showHUD = false;
+
 /* ======== GL helper functions ======== */
 
 export function createCanvas(id, isDebug) {
