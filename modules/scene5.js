@@ -195,6 +195,54 @@ function createScene(gl) {
   return scene;
 }
 
+function setupCamera(gl) {
+  const position = new Vector3([0, 2, 10]);
+  const target = new Vector3([0, 0, -4]);
+  const fovDegrees = 45;
+  return new Camera(gl, position, target, fovDegrees);
+}
+
+function setupLight() {
+  return {
+    position: new Vector3([0, 100, 100]),
+    color: new Vector3([1, 1, 1]),
+  };
+}
+
+function setupHUD(scene) {
+  return {
+    viewMatrix: new Matrix4(),
+    projMatrix: new Matrix4().ortho(
+        {left: -1, right: 1, bottom: -1, top: 1, near: 0.1, far: 10}),
+    texture: scene.textures.checkerboardTexture,
+    transform:
+        new Matrix4().translate([0.5, 0.5, 0]).rotateX(util.degToRad(90)),
+  };
+}
+
+function createTextures(gl) {
+  const textures = {};
+
+  const checkerboardTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, checkerboardTexture);
+  gl.texImage2D(
+      gl.TEXTURE_2D, 0, gl.LUMINANCE, 8, 8, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE,
+      new Uint8Array([
+        0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xCC, 0xFF, 0xCC,
+        0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+        0xFF, 0xCC, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xFF,
+        0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xCC, 0xFF, 0xCC, 0xFF,
+        0xCC, 0xFF, 0xCC, 0xFF, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+        0xCC, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+      ]));
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+  textures.checkerboardTexture = checkerboardTexture;
+
+  return textures;
+}
+
 function drawFrame(gl, programInfos, scene, timestamp) {
   drawScene(gl, programInfos, scene, timestamp);
 
@@ -268,52 +316,4 @@ function drawHUD(gl, programInfos, scene) {
   };
   util.drawBuffer(
       gl, programInfos.hud, scene.debugWindow.bufferInfo, hudUniforms);
-}
-
-function setupCamera(gl) {
-  const position = new Vector3([0, 2, 10]);
-  const target = new Vector3([0, 0, -4]);
-  const fovDegrees = 45;
-  return new Camera(gl, position, target, fovDegrees);
-}
-
-function setupLight() {
-  return {
-    position: new Vector3([0, 100, 100]),
-    color: new Vector3([1, 1, 1]),
-  };
-}
-
-function setupHUD(scene) {
-  return {
-    viewMatrix: new Matrix4(),
-    projMatrix: new Matrix4().ortho(
-        {left: -1, right: 1, bottom: -1, top: 1, near: 0.1, far: 10}),
-    texture: scene.textures.checkerboardTexture,
-    transform:
-        new Matrix4().translate([0.5, 0.5, 0]).rotateX(util.degToRad(90)),
-  };
-}
-
-function createTextures(gl) {
-  const textures = {};
-
-  const checkerboardTexture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, checkerboardTexture);
-  gl.texImage2D(
-      gl.TEXTURE_2D, 0, gl.LUMINANCE, 8, 8, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE,
-      new Uint8Array([
-        0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xCC, 0xFF, 0xCC,
-        0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-        0xFF, 0xCC, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xFF,
-        0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xCC, 0xFF, 0xCC, 0xFF,
-        0xCC, 0xFF, 0xCC, 0xFF, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-        0xCC, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-      ]));
-  gl.generateMipmap(gl.TEXTURE_2D);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-  textures.checkerboardTexture = checkerboardTexture;
-
-  return textures;
 }
