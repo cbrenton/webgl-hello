@@ -11,12 +11,14 @@ export class Camera {
     this.fov = degToRad(fovDegrees);
     this.aspect =
         parseFloat(gl.canvas.clientWidth) / parseFloat(gl.canvas.clientHeight);
+    this.near = 0.1;
+    this.far = 100.0;
 
     this.viewMatrix = new Matrix4().lookAt(
         {eye: this.position, center: this.target, up: this.up});
 
     this.projMatrix = new Matrix4().perspective(
-        {fov: this.fov, aspect: this.aspect, near: 0.1, far: 100});
+        {fov: this.fov, aspect: this.aspect, near: this.near, far: this.far});
   }
 
   worldPosition() {

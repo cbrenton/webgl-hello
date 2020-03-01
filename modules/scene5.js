@@ -141,9 +141,17 @@ uniform sampler2D u_texture;
 
 out vec4 finalColor;
 
+float linearize(float depth) {
+  float near = 0.1;
+  float far = 100.0;
+  return (2.0 * near) / (far + near - depth * (far - near));
+}
+
 void main() {
-  finalColor = texture(u_texture, v_texcoord);
-}`
+  float z = texture(u_texture, v_texcoord).r;
+  float grey = linearize(z);
+  finalColor = vec4(grey, grey, grey, 1);
+}`,
 };
 
 const startTime = performance.now();
@@ -155,6 +163,7 @@ export default function render() {
     checkerboard: util.createShaders(gl, shaders.planeShader),
     hud: util.createShaders(gl, shaders.hud),
   };
+
   const scene = createScene(gl);
   drawFrame(gl, programInfos, scene, performance.now());
 }
@@ -171,7 +180,7 @@ function createScene(gl) {
     sphere: {
       bufferInfo: sphereBufferInfo,
       color: new Vector3([0.8, 0.2, 0.2]),
-      transform: new Matrix4().translate([3, 0, -4]),
+      transform: new Matrix4().translate([3, 0, -10]),
     },
     plane: {
       bufferInfo: planeBufferInfo,
@@ -191,9 +200,35 @@ function createScene(gl) {
   scene.camera = setupCamera(gl);
   scene.light = setupLight(gl);
   scene.textures = createTextures(gl);
+  scene.depth = setupDepthBuffer(gl);
   scene.hud = setupHUD(scene);
 
   return scene;
+}
+
+function setupDepthBuffer(gl) {
+  const size = 512;
+  const depthFramebuffer = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
+
+  // Create depth buffer for renderbuffer
+  const depthTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, depthTexture);
+  gl.texImage2D(
+      gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT32F, size, size, 0,
+      gl.DEPTH_COMPONENT, gl.FLOAT, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.framebufferTexture2D(
+      gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthTexture, 0);
+
+  return {
+    framebuffer: depthFramebuffer,
+    texture: depthTexture,
+    bufferSize: size,
+  };
 }
 
 function setupCamera(gl) {
@@ -214,9 +249,9 @@ function setupHUD(scene) {
     viewMatrix: new Matrix4(),
     projMatrix: new Matrix4().ortho(
         {left: -1, right: 1, bottom: -1, top: 1, near: 0.1, far: 10}),
-    texture: scene.textures.checkerboardTexture,
+    texture: scene.depth.texture,
     transform:
-        new Matrix4().translate([0.5, 0.5, 0]).rotateX(util.degToRad(90)),
+        new Matrix4().translate([0.5, 0.5, 0]).rotateX(util.degToRad(-90)),
   };
 }
 
@@ -240,11 +275,22 @@ function createTextures(gl) {
 
   textures.checkerboardTexture = checkerboardTexture;
 
+  gl.bindTexture(gl.TEXTURE_2D, null);
+
   return textures;
 }
 
 function drawFrame(gl, programInfos, scene, timestamp) {
+  // Draw to texture
+  gl.bindFramebuffer(gl.FRAMEBUFFER, scene.depth.framebuffer);
+  gl.viewport(0, 0, scene.depth.bufferSize, scene.depth.bufferSize);
   drawScene(gl, programInfos, scene, timestamp);
+
+  // Draw to canvas
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+  drawScene(gl, programInfos, scene, timestamp);
+  drawHUD(gl, programInfos, scene);
 
   requestAnimationFrame(function(timestamp) {
     drawFrame(gl, programInfos, scene, timestamp);
@@ -256,8 +302,6 @@ function drawScene(gl, programInfos, scene, timestamp) {
   const msPerRotation = 8000;
   const rotationRadians = 2 * Math.PI * (elapsedMs / msPerRotation);
 
-  // Set up viewport and clear color and depth buffers
-  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
   gl.clearColor(0, 0, 0, 1);
   gl.enable(gl.DEPTH_TEST);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -299,8 +343,6 @@ function drawScene(gl, programInfos, scene, timestamp) {
   };
   util.drawBuffer(
       gl, programInfos.checkerboard, scene.plane.bufferInfo, planeUniforms);
-
-  drawHUD(gl, programInfos, scene);
 }
 
 function drawHUD(gl, programInfos, scene) {
