@@ -8,6 +8,8 @@ import {DirectionalLight} from './light.js';
 
 const sceneId = '5';
 
+window.useSoftShadows = true;
+
 const shaders = {};
 shaders.phongShader = {
   vs: `#version 300 es
@@ -55,10 +57,12 @@ in vec3 v_surfToLight;
 in vec3 v_surfToCamera;
 in vec4 v_shadowCoord;
 
+uniform float u_shadowMapSize;
 uniform vec3 u_matColor;
 uniform vec3 u_lightColor;
 uniform sampler2D u_texture;
-uniform sampler2D u_depthTexture;
+uniform sampler2D u_shadowMap;
+uniform bool u_useSoftShadows;
 
 out vec4 finalColor;
 
@@ -69,12 +73,29 @@ void main() {
   vec3 shadowCoord = v_shadowCoord.xyz / v_shadowCoord.w;
 
   float cameraDepth = shadowCoord.z;
-  float shadowMapDepth = texture(u_depthTexture, shadowCoord.xy).r;
+  float shadowMapDepth = texture(u_shadowMap, shadowCoord.xy).r;
 
-  float visibility = 1.0;
+  float visibility = 0.0;
+  float bias = 0.00001;
 
-  if (cameraDepth - shadowMapDepth > 0.000001) {
-    visibility = 0.0;
+  if (cameraDepth - shadowMapDepth < bias) {
+    visibility += 1.0;
+  }
+
+  if (u_useSoftShadows) {
+    float count = 1.0;
+    for (float y = -1.5; y <= 1.5; y += 1.0) {
+      for (float x = -1.5; x <= 1.5; x += 1.0) {
+        vec2 shadowMapSize = 1.0f / vec2(u_shadowMapSize);
+        vec2 texOffset = vec2(x * shadowMapSize.x, y * shadowMapSize.y);
+        float tmpShadowDepth = texture(u_shadowMap, shadowCoord.xy + texOffset).r;
+        if (cameraDepth - tmpShadowDepth < bias) {
+          visibility += 1.0;
+        }
+        count += 1.0;
+      }
+    }
+    visibility /= count;
   }
 
   vec3 surfToLightDir = normalize(v_surfToLight);
@@ -95,7 +116,7 @@ void main() {
   vec3 ambient = ambientStrength * u_lightColor;
 
   vec3 texColor = texture(u_texture, v_texcoord).xyz;
-  vec3 result = (ambient + specular + diffuse) * u_matColor * texColor * visibility;
+  vec3 result = (ambient + (specular + diffuse) * visibility) * u_matColor * texColor;
   finalColor = vec4(result, 1.0);
 }`,
 };
@@ -373,8 +394,10 @@ function drawScene(gl, programInfos, scene, renderCamera, lightMVP, timestamp) {
     u_lightColor: scene.light.color,
     u_cameraPos: renderCamera.worldPosition(),
     u_depthMVP: lightMVP,
-    u_depthTexture: scene.shadowMap.texture,
+    u_shadowMap: scene.shadowMap.texture,
     u_texture: scene.textures.checkerboardTexture,
+    u_shadowMapSize: scene.shadowMap.bufferSize,
+    u_useSoftShadows: window.useSoftShadows,
   }
 
   // Draw sphere
