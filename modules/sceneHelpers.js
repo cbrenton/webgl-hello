@@ -4,16 +4,26 @@ window.showHUD = false;
 
 /* ======== GL helper functions ======== */
 
-export function createCanvas(id, isDebug) {
+export function createCanvas(id, description, isDebug) {
   isDebug = isDebug || false;
+  const container = document.createElement('div');
+  container.setAttribute('class', 'canvasContainerContainer');
+
   const el = document.createElement('div');
   el.setAttribute('class', 'canvasContainer');
 
   const canvas = document.createElement('canvas');
+  canvas.setAttribute('class', 'inner');
   canvas.setAttribute('id', `c${id}`);
 
+  const label = document.createElement('span');
+  label.innerHTML = description;
+  label.setAttribute('class', 'inner');
+
   el.appendChild(canvas);
-  document.body.appendChild(el);
+  el.appendChild(label);
+  container.appendChild(el);
+  document.body.appendChild(container);
   if (isDebug) {
     addDebugControls(id);
   }

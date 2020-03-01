@@ -7,6 +7,11 @@ import {Camera} from './camera.js';
 import {DirectionalLight} from './light.js';
 
 const sceneId = '5';
+const description = `
+<b>Scene 5:</b>
+A simple scene with Phong lighting, texture mapping,
+and soft shadows via shadow mapping.
+`;
 const startTime = performance.now();
 
 window.useSoftShadows = true;
@@ -223,7 +228,7 @@ void main() {
 };
 
 export default function render() {
-  const gl = util.createGLCanvas(sceneId);
+  const gl = util.createGLCanvas(sceneId, description);
   const programInfos = {
     phong: util.createShaders(gl, shaders.phongShader),
     checkerboard: util.createShaders(gl, shaders.planeShader),

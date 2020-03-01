@@ -4,6 +4,10 @@ import {Vector3, Matrix4} from 'math.gl';
 import {createCanvas} from './sceneHelpers.js';
 
 const sceneId = '3';
+const description = `
+<b>Scene 3:</b>
+An unlit rotating cube.
+`;
 
 const vertShaderSource = `
 attribute vec4 a_position;
@@ -39,7 +43,7 @@ void main() {
 const startTime = performance.now();
 
 export default function render() {
-  const canvas = createCanvas(sceneId);
+  const canvas = createCanvas(sceneId, description);
   const gl = initGL(canvas);
   const shaderProgram = createShaders(gl);
   createVertexData(gl, shaderProgram);

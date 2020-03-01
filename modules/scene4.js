@@ -4,6 +4,10 @@ import {Vector3, Vector4, Matrix4} from 'math.gl';
 import {createCanvas, degToRad} from './sceneHelpers.js';
 
 const sceneId = '4';
+const description = `
+<b>Scene 4:</b>
+A rotating cube with simple diffuse lighting.
+`;
 const startTime = performance.now();
 
 const vertShaderSource = `
@@ -42,7 +46,7 @@ void main() {
 `;
 
 export default function render() {
-  const canvas = createCanvas(sceneId);
+  const canvas = createCanvas(sceneId, description);
   const gl = initGL(canvas);
   const shaderProgram = createShaders(gl);
   createVertexData(gl, shaderProgram);

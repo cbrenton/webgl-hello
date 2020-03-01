@@ -4,6 +4,10 @@ import {Vector3, Matrix4} from 'math.gl';
 import {createCanvas} from './sceneHelpers.js';
 
 const sceneId = '2';
+const description = `
+<b>Scene 2:</b>
+Two simple triangles with a perspective projection matrix.
+`;
 
 const vertShaderSource = `
 attribute vec4 a_position;
@@ -37,7 +41,7 @@ void main() {
 `;
 
 export default function render() {
-  const canvas = createCanvas(sceneId);
+  const canvas = createCanvas(sceneId, description);
   const gl = initGL(canvas);
   const shaderProgram = createShaders(gl);
   createVertexData(gl, shaderProgram);

@@ -4,6 +4,10 @@ import {Vector3, Matrix4} from 'math.gl';
 import {createCanvas} from './sceneHelpers.js';
 
 const sceneId = '1';
+const description = `
+<b>Scene 1:</b>
+Two simple triangles with an orthographic projection matrix.
+`;
 
 const vertShaderSource = `
 attribute vec4 a_position;
@@ -37,7 +41,7 @@ void main() {
 `;
 
 export default function render() {
-  const canvas = createCanvas(sceneId, false);
+  const canvas = createCanvas(sceneId, description, false);
   const gl = initGL(canvas);
   const shaderProgram = createShaders(gl);
   createVertexData(gl, shaderProgram);
