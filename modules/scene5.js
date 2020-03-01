@@ -278,7 +278,7 @@ function createScene(gl) {
 }
 
 function setupShadowMap(gl) {
-  const size = 1024;
+  const size = 2048;
   const depthFramebuffer = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
 
