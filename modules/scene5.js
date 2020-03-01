@@ -7,6 +7,7 @@ import {Camera} from './camera.js';
 import {DirectionalLight} from './light.js';
 
 const sceneId = '5';
+const startTime = performance.now();
 
 window.useSoftShadows = true;
 
@@ -221,10 +222,8 @@ void main() {
 `,
 };
 
-const startTime = performance.now();
-
 export default function render() {
-  const gl = util.createGLCanvas(sceneId, true);
+  const gl = util.createGLCanvas(sceneId);
   const programInfos = {
     phong: util.createShaders(gl, shaders.phongShader),
     checkerboard: util.createShaders(gl, shaders.planeShader),

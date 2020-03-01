@@ -4,6 +4,7 @@ import {Vector3, Vector4, Matrix4} from 'math.gl';
 import {createCanvas, degToRad} from './sceneHelpers.js';
 
 const sceneId = '4';
+const startTime = performance.now();
 
 const vertShaderSource = `
 attribute vec4 a_position;
@@ -41,7 +42,7 @@ void main() {
 `;
 
 export default function render() {
-  const canvas = createCanvas(sceneId, true);
+  const canvas = createCanvas(sceneId);
   const gl = initGL(canvas);
   const shaderProgram = createShaders(gl);
   createVertexData(gl, shaderProgram);
@@ -351,28 +352,9 @@ function drawArbitraryTriangles(
 }
 
 function draw(gl, program, timestamp) {
-  const rotationSlider = document.getElementById(`rotationSlider${sceneId}`);
-  const topDownCheckbox = document.getElementById(`topDownCheckbox${sceneId}`);
-  const zoomSlider = document.getElementById(`zoomSlider${sceneId}`);
-
-  let rotationDeg = 0;
-  if (rotationSlider) {
-    rotationDeg = rotationSlider.value;
-  }
-
-  let useTopDown = false;
-  if (topDownCheckbox) {
-    useTopDown = topDownCheckbox.checked;
-  }
-
-  let cameraDistance = 10;
-  if (zoomSlider) {
-    cameraDistance = zoomSlider.value;
-  }
-
-  const rotationRadians = degToRad(rotationDeg);
-
-  var eye, center, up;
+  const elapsedMs = timestamp - startTime;
+  const msPerRotation = 8000;
+  const rotationRadians = 2 * Math.PI * (elapsedMs / msPerRotation);
 
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
   gl.clearColor(0, 0, 0, 1);
@@ -381,21 +363,15 @@ function draw(gl, program, timestamp) {
 
   const zCenter = -4;
 
-  if (useTopDown) {
-    // Top down camera
-    eye = new Vector3([0, cameraDistance, zCenter]);
-    center = new Vector3([eye.x, 0, eye.z]);
-    up = new Vector3([0, 0, -1]);
-  } else {
-    eye = new Vector3([0, 0, cameraDistance]);
-    center = new Vector3([eye.x, eye.y, eye.z - 1]);
-    up = new Vector3([0, 1, 0]);
-  }
+  const cameraDistance = 10;
+  const eye = new Vector3([0, 0, cameraDistance]);
+  const center = new Vector3([eye.x, eye.y, eye.z - 1]);
+  const up = new Vector3([0, 1, 0]);
 
   const viewMatrix = new Matrix4().lookAt({eye, center, up});
 
   const fov = degToRad(45);
-  const aspect = gl.canvas.width / gl.canvas.height;
+  const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
   const projMatrix =
       new Matrix4().perspective({fov, aspect, near: 0.1, far: 100});
   projMatrix.translate(
