@@ -256,17 +256,17 @@ function createScene(gl) {
     sphere: {
       bufferInfo: sphereBufferInfo,
       color: new Vector3([0.8, 0.2, 0.2]),
-      transform: new Matrix4().translate([3, 0, -6]),
+      transform: new Matrix4().translate([1.2, 1, 0]),
     },
     plane: {
       bufferInfo: planeBufferInfo,
       color: new Vector3([0.6, 0.6, 0.6]),
-      transform: new Matrix4().translate([0, -3, -4]).scale(20),
+      transform: new Matrix4().translate([0, -1, -4]).scale(20),
     },
     cube: {
       bufferInfo: cubeBufferInfo,
       color: new Vector3([0.2, 0.8, 0.2]),
-      transform: new Matrix4().translate([-3, 0, -2]),
+      transform: new Matrix4().translate([-1.2, 0, -3]),
     },
     debugWindow: {
       bufferInfo: debugWindowBufferInfo,
@@ -316,7 +316,7 @@ function setupCamera(gl) {
 }
 
 function setupLight(gl) {
-  const position = new Vector3([100, 100, 100]);
+  const position = new Vector3([20, 20, 20]);
   const target = new Vector3([0, 0, -4]);
   const up = new Vector3([0, 0, -1]);
   const color = new Vector3([1, 1, 1]);

@@ -11,7 +11,7 @@ export class DirectionalLight {
     this.up = up;
     this.color = color;
 
-    this.fov = degToRad(45);
+    this.fov = degToRad(90);
     this.near = 0.1;
     this.far = 1000.0;
 
