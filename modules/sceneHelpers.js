@@ -28,9 +28,13 @@ export function createShaders(gl, shaders) {
   return twgl.createProgramInfo(gl, [shaders.vs, shaders.fs]);
 }
 
-export function drawBuffer(gl, programInfo, bufferInfo, uniforms) {
+export function drawBuffer(
+    gl, programInfo, bufferInfo, uniforms, globalUniforms) {
   gl.useProgram(programInfo.program);
 
+  if (globalUniforms !== undefined) {
+    twgl.setUniforms(programInfo, globalUniforms);
+  }
   twgl.setUniforms(programInfo, uniforms);
 
   twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);

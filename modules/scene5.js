@@ -4,7 +4,7 @@ import {Vector3, Matrix4} from 'math.gl';
 import * as util from './sceneHelpers.js';
 import * as twgl from 'twgl.js';
 import {Camera} from './camera.js';
-import {Light} from './light.js';
+import {DirectionalLight} from './light.js';
 
 const sceneId = '5';
 
@@ -19,7 +19,7 @@ in vec3 a_normal;
 uniform mat4 u_modelMatrix;
 uniform mat4 u_viewMatrix;
 uniform mat4 u_projectionMatrix;
-uniform vec3 u_lightPos;
+uniform vec3 u_reverseLightDir;
 uniform vec3 u_cameraPos;
 
 out vec3 v_normal;
@@ -38,7 +38,7 @@ void main() {
   vec3 surfaceWorldPos = (u_modelMatrix * a_position).xyz;
   vec3 cameraWorldPos = mat3(u_modelMatrix) * u_cameraPos;
 
-  v_surfToLight = u_lightPos - surfaceWorldPos;
+  v_surfToLight = u_reverseLightDir;
 
   v_surfToCamera = cameraWorldPos - surfaceWorldPos;
 }`,
@@ -239,9 +239,9 @@ function setupCamera(gl) {
 }
 
 function setupLight(gl) {
-  const position = new Vector3([0, 100, 100]);
+  const lightDirection = new Vector3([0, -100, -100]);
   const color = new Vector3([1, 1, 1]);
-  return new Light(gl, position, color);
+  return new DirectionalLight(gl, lightDirection, color);
 }
 
 function setupHUD(scene) {
@@ -284,12 +284,12 @@ function drawFrame(gl, programInfos, scene, timestamp) {
   // Draw to texture
   gl.bindFramebuffer(gl.FRAMEBUFFER, scene.depth.framebuffer);
   gl.viewport(0, 0, scene.depth.bufferSize, scene.depth.bufferSize);
-  drawScene(gl, programInfos, scene, timestamp);
+  drawScene(gl, programInfos, scene, scene.camera, timestamp);
 
   // Draw to canvas
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-  drawScene(gl, programInfos, scene, timestamp);
+  drawScene(gl, programInfos, scene, scene.camera, timestamp);
   drawHUD(gl, programInfos, scene);
 
   requestAnimationFrame(function(timestamp) {
@@ -297,7 +297,7 @@ function drawFrame(gl, programInfos, scene, timestamp) {
   });
 }
 
-function drawScene(gl, programInfos, scene, timestamp) {
+function drawScene(gl, programInfos, scene, renderCamera, timestamp) {
   const elapsedMs = timestamp - startTime;
   const msPerRotation = 8000;
   const rotationRadians = 2 * Math.PI * (elapsedMs / msPerRotation);
@@ -306,43 +306,47 @@ function drawScene(gl, programInfos, scene, timestamp) {
   gl.enable(gl.DEPTH_TEST);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+  const globalUniforms = {
+    u_reverseLightDir: new Vector3().copy(scene.light.lightDirection).scale(-1),
+    u_lightColor: scene.light.color,
+    u_cameraPos: renderCamera.worldPosition(),
+  }
+
   // Draw sphere
   const sphereUniforms = {
     u_modelMatrix:
         new Matrix4().copy(scene.sphere.transform).rotateY(rotationRadians),
-    u_viewMatrix: scene.camera.viewMatrix,
-    u_projectionMatrix: scene.camera.projMatrix,
+    u_viewMatrix: renderCamera.viewMatrix,
+    u_projectionMatrix: renderCamera.projMatrix,
     u_matColor: scene.sphere.color,
-    u_lightPos: scene.light.position,
-    u_lightColor: scene.light.color,
-    u_cameraPos: scene.camera.worldPosition(),
   };
   util.drawBuffer(
-      gl, programInfos.phong, scene.sphere.bufferInfo, sphereUniforms);
+      gl, programInfos.phong, scene.sphere.bufferInfo, sphereUniforms,
+      globalUniforms);
 
   // Draw cube
   const cubeUniforms = {
     u_modelMatrix:
         new Matrix4().copy(scene.cube.transform).rotateY(rotationRadians),
-    u_viewMatrix: scene.camera.viewMatrix,
-    u_projectionMatrix: scene.camera.projMatrix,
+    u_viewMatrix: renderCamera.viewMatrix,
+    u_projectionMatrix: renderCamera.projMatrix,
     u_matColor: scene.cube.color,
-    u_lightPos: scene.light.position,
-    u_lightColor: scene.light.color,
-    u_cameraPos: scene.camera.worldPosition(),
   };
-  util.drawBuffer(gl, programInfos.phong, scene.cube.bufferInfo, cubeUniforms);
+  util.drawBuffer(
+      gl, programInfos.phong, scene.cube.bufferInfo, cubeUniforms,
+      globalUniforms);
 
   // Draw plane
   const planeUniforms = {
     u_modelMatrix: scene.plane.transform,
-    u_viewMatrix: scene.camera.viewMatrix,
-    u_projectionMatrix: scene.camera.projMatrix,
+    u_viewMatrix: renderCamera.viewMatrix,
+    u_projectionMatrix: renderCamera.projMatrix,
     u_texture: scene.textures.checkerboardTexture,
     u_matColor: scene.plane.color,
   };
   util.drawBuffer(
-      gl, programInfos.checkerboard, scene.plane.bufferInfo, planeUniforms);
+      gl, programInfos.checkerboard, scene.plane.bufferInfo, planeUniforms,
+      globalUniforms);
 }
 
 function drawHUD(gl, programInfos, scene) {
