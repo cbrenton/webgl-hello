@@ -236,7 +236,7 @@ function drawCube(gl, program, transform, viewMatrix) {
 
   // Projection matrix
   const fov = 45 * Math.PI / 180;
-  const aspect = gl.canvas.width / gl.canvas.height;
+  const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
   var projMatrix = new Matrix4().perspective({fov, aspect, near: 0.1, far: 10});
   const projMatrixLocation = gl.getUniformLocation(program, 'u_proj_matrix');
   gl.uniformMatrix4fv(projMatrixLocation, false, projMatrix);
