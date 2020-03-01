@@ -4,6 +4,7 @@ import {Vector3, Matrix4} from 'math.gl';
 import * as util from './sceneHelpers.js';
 import * as twgl from 'twgl.js';
 import {Camera} from './camera.js';
+import {Light} from './light.js';
 
 const sceneId = '5';
 
@@ -202,11 +203,10 @@ function setupCamera(gl) {
   return new Camera(gl, position, target, fovDegrees);
 }
 
-function setupLight() {
-  return {
-    position: new Vector3([0, 100, 100]),
-    color: new Vector3([1, 1, 1]),
-  };
+function setupLight(gl) {
+  const position = new Vector3([0, 100, 100]);
+  const color = new Vector3([1, 1, 1]);
+  return new Light(gl, position, color);
 }
 
 function setupHUD(scene) {
