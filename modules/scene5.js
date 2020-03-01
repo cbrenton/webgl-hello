@@ -170,14 +170,17 @@ function createScene(gl) {
     sphere: {
       bufferInfo: sphereBufferInfo,
       color: new Vector3([0.8, 0.2, 0.2]),
+      transform: new Matrix4().translate([3, 0, -4]),
     },
     plane: {
       bufferInfo: planeBufferInfo,
       color: new Vector3([0.3, 0.3, 0.3]),
+      transform: new Matrix4().translate([0, -3, -4]).scale(20),
     },
     cube: {
       bufferInfo: cubeBufferInfo,
       color: new Vector3([0.2, 0.8, 0.2]),
+      transform: new Matrix4().translate([-3, 0, -4]),
     },
     debugWindow: {
       bufferInfo: debugWindowBufferInfo,
@@ -204,7 +207,6 @@ function drawScene(gl, programInfos, scene, timestamp) {
   const elapsedMs = timestamp - startTime;
   const msPerRotation = 8000;
   const rotationRadians = 2 * Math.PI * (elapsedMs / msPerRotation);
-  const zCenter = -4;
 
   // Set up viewport and clear color and depth buffers
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -213,10 +215,9 @@ function drawScene(gl, programInfos, scene, timestamp) {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   // Draw sphere
-  const sphereTransform =
-      new Matrix4().translate([3, 0, zCenter]).rotateY(rotationRadians);
   const sphereUniforms = {
-    u_modelMatrix: sphereTransform,
+    u_modelMatrix:
+        new Matrix4().copy(scene.sphere.transform).rotateY(rotationRadians),
     u_viewMatrix: scene.camera.viewMatrix,
     u_projectionMatrix: scene.camera.projMatrix,
     u_matColor: scene.sphere.color,
@@ -228,10 +229,9 @@ function drawScene(gl, programInfos, scene, timestamp) {
       gl, programInfos.phong, scene.sphere.bufferInfo, sphereUniforms);
 
   // Draw cube
-  const cubeTransform =
-      new Matrix4().translate([-3, 0, zCenter]).rotateY(rotationRadians);
   const cubeUniforms = {
-    u_modelMatrix: cubeTransform,
+    u_modelMatrix:
+        new Matrix4().copy(scene.cube.transform).rotateY(rotationRadians),
     u_viewMatrix: scene.camera.viewMatrix,
     u_projectionMatrix: scene.camera.projMatrix,
     u_matColor: scene.cube.color,
@@ -242,9 +242,8 @@ function drawScene(gl, programInfos, scene, timestamp) {
   util.drawBuffer(gl, programInfos.phong, scene.cube.bufferInfo, cubeUniforms);
 
   // Draw plane
-  const planeTransform = new Matrix4().translate([0, -3, zCenter]).scale(20);
   const planeUniforms = {
-    u_modelMatrix: planeTransform,
+    u_modelMatrix: scene.plane.transform,
     u_viewMatrix: scene.camera.viewMatrix,
     u_projectionMatrix: scene.camera.projMatrix,
     u_texture: scene.textures.checkerboardTexture,
@@ -261,11 +260,8 @@ function drawHUD(gl, programInfos, scene) {
     return;
   }
   // Draw texture debug window
-  const hudTransform = new Matrix4();
-  hudTransform.translate([0.5, 0.5, 0]);
-  hudTransform.rotateX(util.degToRad(90));
   const hudUniforms = {
-    u_modelMatrix: hudTransform,
+    u_modelMatrix: scene.hud.transform,
     u_viewMatrix: scene.hud.viewMatrix,
     u_projectionMatrix: scene.hud.projMatrix,
     u_texture: scene.hud.texture,
@@ -294,6 +290,8 @@ function setupHUD(scene) {
     projMatrix: new Matrix4().ortho(
         {left: -1, right: 1, bottom: -1, top: 1, near: 0.1, far: 10}),
     texture: scene.textures.checkerboardTexture,
+    transform:
+        new Matrix4().translate([0.5, 0.5, 0]).rotateX(util.degToRad(90)),
   };
 }
 
