@@ -4,7 +4,7 @@ import {Vector3, Matrix4} from 'math.gl';
 import * as util from './sceneHelpers.js';
 import * as twgl from 'twgl.js';
 import {Camera} from './camera.js';
-import {DirectionalLight} from './light.js';
+import {PointLight} from './light.js';
 
 const sceneId = '5';
 const description = `
@@ -26,15 +26,15 @@ in vec2 a_texcoord;
 uniform mat4 u_modelMatrix;
 uniform mat4 u_viewMatrix;
 uniform mat4 u_projectionMatrix;
-uniform vec3 u_reverseLightDir;
 uniform vec3 u_cameraPos;
-uniform mat4 u_depthMVP; // @TODO: this name isn't accurate
+uniform vec3 u_lightPos;
+uniform mat4 u_depthVP;
 
 out vec2 v_texcoord;
 out vec3 v_normal;
-out vec3 v_surfToLight;
-out vec3 v_surfToCamera;
+out vec3 v_viewVec;
 out vec4 v_shadowCoord;
+out vec3 v_lightPos;
 
 void main() {
   mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
@@ -44,14 +44,9 @@ void main() {
   v_normal = mat3(modelInverseTranspose) * a_normal;
 
   vec3 surfaceWorldPos = vec3(u_modelMatrix * a_position);
-  vec3 cameraWorldPos = mat3(u_modelMatrix) * u_cameraPos;
-
-  v_surfToLight = u_reverseLightDir;
-  v_surfToCamera = cameraWorldPos - surfaceWorldPos;
-
-  vec4 fragPos = u_modelMatrix * a_position;
-  v_shadowCoord = u_depthMVP * fragPos;
-
+  v_lightPos = u_lightPos;
+  v_viewVec= u_cameraPos - surfaceWorldPos;
+  v_shadowCoord = u_depthVP * u_modelMatrix * a_position;
   v_texcoord = a_texcoord;
 }`,
   fs: `#version 300 es
@@ -59,9 +54,9 @@ precision mediump float;
 
 in vec2 v_texcoord;
 in vec3 v_normal;
-in vec3 v_surfToLight;
-in vec3 v_surfToCamera;
+in vec3 v_viewVec;
 in vec4 v_shadowCoord;
+in vec3 v_lightPos;
 
 uniform float u_shadowMapSize;
 uniform vec3 u_matColor;
@@ -75,14 +70,14 @@ out vec4 finalColor;
 void main() {
   vec3 normal = normalize(v_normal);
 
-  // Convert 3D world position to clip space(0 to 1)
+  // Convert 3D world position to clip space (0 to 1)
   vec3 shadowCoord = v_shadowCoord.xyz / v_shadowCoord.w;
 
   float cameraDepth = shadowCoord.z;
   float shadowMapDepth = texture(u_shadowMap, shadowCoord.xy).r;
 
   float visibility = 0.0;
-  float bias = 0.00001;
+  float bias = 0.0001;
 
   if (cameraDepth - shadowMapDepth < bias) {
     visibility += 1.0;
@@ -104,18 +99,21 @@ void main() {
     visibility /= count;
   }
 
-  vec3 surfToLightDir = normalize(v_surfToLight);
-  vec3 surfToCameraDir = normalize(v_surfToCamera);
-  vec3 halfVector = normalize(surfToLightDir + surfToCameraDir);
+  vec3 L = normalize(v_lightPos);
+  vec3 N = normal;
+  vec3 V = normalize(v_viewVec);
+  vec3 R = -reflect(L, N);
 
   // Diffuse
-  float diffuseIntensity = dot(normal, surfToLightDir);
-  vec3 diffuse = u_lightColor * diffuseIntensity;
+  vec3 diffuse = u_lightColor * dot(L, N);
 
   // Specular
-  float shininess = 32.0;
+  float shininess = 16.0;
   float specularStrength = 1.0;
-  vec3 specular = specularStrength * pow(max(dot(normal, halfVector), 0.0), shininess) * u_lightColor;
+  vec3 specular = vec3(0);
+  if (dot(R, V) > 0.0) {
+    specular = specularStrength * pow(dot(R, V), shininess) * u_lightColor;
+  }
 
   // Ambient
   float ambientStrength = 0.1;
@@ -282,31 +280,6 @@ function createScene(gl) {
   return scene;
 }
 
-function setupShadowMap(gl) {
-  const size = 2048;
-  const depthFramebuffer = gl.createFramebuffer();
-  gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
-
-  // Create depth buffer for renderbuffer
-  const depthTexture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, depthTexture);
-  gl.texImage2D(
-      gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT32F, size, size, 0,
-      gl.DEPTH_COMPONENT, gl.FLOAT, null);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.framebufferTexture2D(
-      gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthTexture, 0);
-
-  return {
-    framebuffer: depthFramebuffer,
-    texture: depthTexture,
-    bufferSize: size,
-  };
-}
-
 function setupCamera(gl) {
   const position = new Vector3([0, 2, 10]);
   const target = new Vector3([0, 0, -4]);
@@ -316,11 +289,11 @@ function setupCamera(gl) {
 }
 
 function setupLight(gl) {
-  const position = new Vector3([20, 20, 20]);
-  const target = new Vector3([0, 0, -4]);
-  const up = new Vector3([0, 0, -1]);
+  const position = new Vector3([14, 14, 10]);
+  const target = new Vector3([0, 0, -2]);
+  const up = new Vector3([0, 1, 0]);
   const color = new Vector3([1, 1, 1]);
-  return new DirectionalLight(gl, position, target, up, color);
+  return new PointLight(gl, position, target, up, color);
 }
 
 function setupHUD(scene) {
@@ -359,6 +332,31 @@ function createTextures(gl) {
   return textures;
 }
 
+function setupShadowMap(gl) {
+  const size = 2048;
+  const depthFramebuffer = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
+
+  // Create depth buffer for renderbuffer
+  const depthTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, depthTexture);
+  gl.texImage2D(
+      gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT32F, size, size, 0,
+      gl.DEPTH_COMPONENT, gl.FLOAT, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.framebufferTexture2D(
+      gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthTexture, 0);
+
+  return {
+    framebuffer: depthFramebuffer,
+    texture: depthTexture,
+    bufferSize: size,
+  };
+}
+
 function drawFrame(gl, programInfos, depthProgramInfos, scene, timestamp) {
   // Draw to texture
   gl.bindFramebuffer(gl.FRAMEBUFFER, scene.shadowMap.framebuffer);
@@ -367,16 +365,16 @@ function drawFrame(gl, programInfos, depthProgramInfos, scene, timestamp) {
       gl, depthProgramInfos, scene, scene.light, new Matrix4(), timestamp);
 
   // Draw to canvas
-  const lightMVP = new Matrix4();
+  const lightVP = new Matrix4();
   // Convert from [-1, 1] to [0, 0]
-  lightMVP.translate(new Vector3([0.5, 0.5, 0.5]));
-  lightMVP.scale(new Vector3([0.5, 0.5, 0.5]));
-  lightMVP.multiplyRight(scene.light.projMatrix);
-  lightMVP.multiplyRight(scene.light.viewMatrix);
+  lightVP.translate(new Vector3([0.5, 0.5, 0.5]));
+  lightVP.scale(new Vector3([0.5, 0.5, 0.5]));
+  lightVP.multiplyRight(scene.light.projMatrix);
+  lightVP.multiplyRight(scene.light.viewMatrix);
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-  drawScene(gl, programInfos, scene, scene.camera, lightMVP, timestamp);
+  drawScene(gl, programInfos, scene, scene.camera, lightVP, timestamp);
   drawHUD(gl, programInfos, scene);
 
   requestAnimationFrame(function(timestamp) {
@@ -384,7 +382,7 @@ function drawFrame(gl, programInfos, depthProgramInfos, scene, timestamp) {
   });
 }
 
-function drawScene(gl, programInfos, scene, renderCamera, lightMVP, timestamp) {
+function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
   const elapsedMs = timestamp - startTime;
   const msPerRotation = 8000;
   const rotationRadians = 2 * Math.PI * (elapsedMs / msPerRotation);
@@ -394,10 +392,10 @@ function drawScene(gl, programInfos, scene, renderCamera, lightMVP, timestamp) {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   const globalUniforms = {
-    u_reverseLightDir: new Vector3().copy(scene.light.lightDirection).scale(-1),
     u_lightColor: scene.light.color,
-    u_cameraPos: renderCamera.worldPosition(),
-    u_depthMVP: lightMVP,
+    u_lightPos: scene.light.position,
+    u_cameraPos: renderCamera.position,
+    u_depthVP: lightVP,
     u_shadowMap: scene.shadowMap.texture,
     u_texture: scene.textures.checkerboardTexture,
     u_shadowMapSize: scene.shadowMap.bufferSize,

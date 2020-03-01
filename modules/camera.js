@@ -20,8 +20,4 @@ export class Camera {
     this.projMatrix = new Matrix4().perspective(
         {fov: this.fov, aspect: this.aspect, near: this.near, far: this.far});
   }
-
-  worldPosition() {
-    return new Matrix4().copy(this.viewMatrix).transform(this.position);
-  }
 }
