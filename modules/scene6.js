@@ -367,7 +367,7 @@ function createScene(gl) {
 
   scene.sphere = {
     bufferInfo: sphereBufferInfo,
-    transform: new Matrix4().translate([1.2, 1, 0]),
+    transform: new Matrix4().translate([0, 3, 0]),
     material: {
       color: {
         diffuse: new Vector3([0.8, 0.2, 0.2]),
@@ -393,7 +393,7 @@ function createScene(gl) {
   };
   scene.cube = {
     bufferInfo: cubeBufferInfo,
-    transform: new Matrix4().translate([-1.2, 0, -3]),
+    transform: new Matrix4().translate([-3, 0, -4]),
     material: {
       color: {
         diffuse: new Vector3([0.2, 0.8, 0.2]),
@@ -559,8 +559,10 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
 
   // Draw sphere
   const sphereUniforms = {
-    u_modelMatrix:
-        new Matrix4().copy(scene.sphere.transform).rotateY(rotationRadians),
+    u_modelMatrix: new Matrix4()
+                       .copy(scene.sphere.transform)
+                       .rotateY(rotationRadians)
+                       .translate(new Vector3([0, 0, 4])),
     u_matColor: scene.sphere.material.color,
     u_diffuseColor: scene.sphere.material.color.diffuse,
     u_specularColor: scene.sphere.material.color.specular,
