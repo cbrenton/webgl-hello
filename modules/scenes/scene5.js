@@ -3,8 +3,8 @@
 import {Vector3, Matrix4} from 'math.gl';
 import * as util from '../sceneHelpers.js';
 import * as twgl from 'twgl.js';
-import {Camera} from '../camera.js';
-import {PointLight} from '../light.js';
+import {Camera} from '../src/camera.js';
+import {PointLight} from '../src/light.js';
 
 const sceneId = '5';
 const description = `

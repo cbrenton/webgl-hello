@@ -5,8 +5,8 @@ import * as util from '../sceneHelpers.js';
 import * as twgl from 'twgl.js';
 import {parseObj} from '../objParser.js';
 import * as bunny from '../models/bunny.obj.js';
-import {Camera} from '../camera.js';
-import {PointLight} from '../light.js';
+import {Camera} from '../src/camera.js';
+import {PointLight} from '../src/light.js';
 
 const sceneId = '6';
 const description = `
