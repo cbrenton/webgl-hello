@@ -24,6 +24,7 @@ export function createCanvas(id, description, isDebug) {
   el.appendChild(label);
   container.appendChild(el);
   document.body.appendChild(container);
+  resizeCanvasToMatchDisplaySize(canvas);
   if (isDebug) {
     addDebugControls(id);
   }
@@ -69,6 +70,19 @@ function initGL(canvas, id) {
   }
   window[`gl${id}`] = gl;
   return gl;
+}
+
+function resizeCanvasToMatchDisplaySize(canvas) {
+  // look up the size the canvas is displayed
+  var desiredWidth = canvas.clientWidth;
+  var desiredHeight = canvas.clientHeight;
+
+  // if the number of pixels in the canvas doesn't match
+  // update the canvas's content size.
+  if (canvas.width != desiredWidth || canvas.height != desiredHeight) {
+    canvas.width = desiredWidth;
+    canvas.height = desiredHeight;
+  }
 }
 
 function addDebugControls(id) {
