@@ -18,10 +18,10 @@ window.useSoftShadows = true;
 
 const shaders = {};
 shaders.phongShader = {
-  vs: `#version 300 es
-in vec4 a_position;
-in vec3 a_normal;
-in vec2 a_texcoord;
+  vs: `
+attribute vec4 a_position;
+attribute vec3 a_normal;
+attribute vec2 a_texcoord;
 
 uniform mat4 u_modelMatrix;
 uniform mat4 u_viewMatrix;
@@ -29,19 +29,19 @@ uniform mat4 u_projectionMatrix;
 uniform vec3 u_cameraPos;
 uniform vec3 u_lightPos;
 uniform mat4 u_depthVP;
+uniform mat4 u_modelInverseTranspose;
 
-out vec2 v_texcoord;
-out vec3 v_normal;
-out vec3 v_viewVec;
-out vec4 v_shadowCoord;
-out vec3 v_lightPos;
+varying vec2 v_texcoord;
+varying vec3 v_normal;
+varying vec3 v_viewVec;
+varying vec4 v_shadowCoord;
+varying vec3 v_lightPos;
 
 void main() {
   mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
   gl_Position = mvp * a_position;
 
-  mat4 modelInverseTranspose = transpose(inverse(u_modelMatrix));
-  v_normal = mat3(modelInverseTranspose) * a_normal;
+  v_normal = mat3(u_modelInverseTranspose) * a_normal;
 
   vec3 surfaceWorldPos = vec3(u_modelMatrix * a_position);
   v_lightPos = u_lightPos;
@@ -49,14 +49,14 @@ void main() {
   v_shadowCoord = u_depthVP * u_modelMatrix * a_position;
   v_texcoord = a_texcoord;
 }`,
-  fs: `#version 300 es
+  fs: `
 precision mediump float;
 
-in vec2 v_texcoord;
-in vec3 v_normal;
-in vec3 v_viewVec;
-in vec4 v_shadowCoord;
-in vec3 v_lightPos;
+varying vec2 v_texcoord;
+varying vec3 v_normal;
+varying vec3 v_viewVec;
+varying vec4 v_shadowCoord;
+varying vec3 v_lightPos;
 
 uniform float u_shadowMapSize;
 uniform vec3 u_matColor;
@@ -65,8 +65,6 @@ uniform sampler2D u_texture;
 uniform sampler2D u_shadowMap;
 uniform bool u_useSoftShadows;
 
-out vec4 finalColor;
-
 void main() {
   vec3 normal = normalize(v_normal);
 
@@ -74,7 +72,7 @@ void main() {
   vec3 shadowCoord = v_shadowCoord.xyz / v_shadowCoord.w;
 
   float cameraDepth = shadowCoord.z;
-  float shadowMapDepth = texture(u_shadowMap, shadowCoord.xy).r;
+  float shadowMapDepth = texture2D(u_shadowMap, shadowCoord.xy).r;
 
   float visibility = 0.0;
   float bias = 0.00002;
@@ -87,9 +85,9 @@ void main() {
     float count = 1.0;
     for (float y = -1.5; y <= 1.5; y += 1.0) {
       for (float x = -1.5; x <= 1.5; x += 1.0) {
-        vec2 shadowMapSize = 1.0f / vec2(u_shadowMapSize);
+        vec2 shadowMapSize = 1.0 / vec2(u_shadowMapSize);
         vec2 texOffset = vec2(x * shadowMapSize.x, y * shadowMapSize.y);
-        float tmpShadowDepth = texture(u_shadowMap, shadowCoord.xy + texOffset).r;
+        float tmpShadowDepth = texture2D(u_shadowMap, shadowCoord.xy + texOffset).r;
         if (cameraDepth - tmpShadowDepth < bias) {
           visibility += 1.0;
         }
@@ -119,22 +117,22 @@ void main() {
   float ambientStrength = 0.1;
   vec3 ambient = ambientStrength * u_lightColor;
 
-  vec3 texColor = texture(u_texture, v_texcoord).xyz;
+  vec3 texColor = texture2D(u_texture, v_texcoord).xyz;
   vec3 result = (ambient + (specular + diffuse) * visibility) * u_matColor * texColor;
-  finalColor = vec4(result, 1.0);
+  gl_FragColor = vec4(result, 1.0);
 }`,
 };
 
 shaders.planeShader = {
-  vs: `#version 300 es
-in vec4 a_position;
-in vec2 a_texcoord;
+  vs: `
+attribute vec4 a_position;
+attribute vec2 a_texcoord;
 
 uniform mat4 u_modelMatrix;
 uniform mat4 u_viewMatrix;
 uniform mat4 u_projectionMatrix;
 
-out vec2 v_texcoord;
+varying vec2 v_texcoord;
 
 void main() {
   mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
@@ -143,31 +141,29 @@ void main() {
 
   v_texcoord = a_texcoord;
 }`,
-  fs: `#version 300 es
+  fs: `
 precision mediump float;
 
-in vec2 v_texcoord;
+varying vec2 v_texcoord;
 
 uniform vec3 u_matColor;
 uniform sampler2D u_texture;
 
-out vec4 finalColor;
-
 void main() {
-  finalColor = texture(u_texture, v_texcoord) * vec4(u_matColor, 1);
+  gl_FragColor = texture2D(u_texture, v_texcoord) * vec4(u_matColor, 1);
 }`,
 };
 
 shaders.hudShader = {
-  vs: `#version 300 es
-in vec4 a_position;
-in vec2 a_texcoord;
+  vs: `
+attribute vec4 a_position;
+attribute vec2 a_texcoord;
 
 uniform mat4 u_modelMatrix;
 uniform mat4 u_viewMatrix;
 uniform mat4 u_projectionMatrix;
 
-out vec2 v_texcoord;
+varying vec2 v_texcoord;
 
 void main() {
   mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
@@ -178,14 +174,12 @@ void main() {
 
   v_texcoord = a_texcoord;
 }`,
-  fs: `#version 300 es
+  fs: `
 precision mediump float;
 
-in vec2 v_texcoord;
+varying vec2 v_texcoord;
 
 uniform sampler2D u_texture;
-
-out vec4 finalColor;
 
 float linearize(float depth) {
   float near = 0.1;
@@ -194,15 +188,15 @@ float linearize(float depth) {
 }
 
 void main() {
-  float z = texture(u_texture, v_texcoord).r;
+  float z = texture2D(u_texture, v_texcoord).r;
   float grey = linearize(z);
-  finalColor = vec4(grey, grey, grey, 1);
+  gl_FragColor = vec4(grey, grey, grey, 1);
 }`,
 };
 
 shaders.simpleColorShader = {
-  vs: `#version 300 es
-in vec4 a_position;
+  vs: `
+attribute vec4 a_position;
 
 uniform mat4 u_modelMatrix;
 uniform mat4 u_viewMatrix;
@@ -213,14 +207,11 @@ void main() {
   gl_Position = mvp * a_position;
 }
 `,
-  fs: `#version 300 es
+  fs: `
 precision mediump float;
 
-out vec4 outColor;
-
 void main() {
-  //outColor = vec4(1);
-  outColor = vec4(gl_FragCoord.z);
+  gl_FragColor = vec4(gl_FragCoord.z);
 }
 `,
 };
@@ -341,8 +332,8 @@ function setupShadowMap(gl) {
   const depthTexture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, depthTexture);
   gl.texImage2D(
-      gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT32F, size, size, 0,
-      gl.DEPTH_COMPONENT, gl.FLOAT, null);
+      gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT, size, size, 0, gl.DEPTH_COMPONENT,
+      gl.UNSIGNED_INT, null);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -404,9 +395,12 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
   }
 
   // Draw sphere
+  const sphereModelMatrix =
+      new Matrix4().copy(scene.sphere.transform).rotateY(rotationRadians);
   const sphereUniforms = {
-    u_modelMatrix:
-        new Matrix4().copy(scene.sphere.transform).rotateY(rotationRadians),
+    u_modelMatrix: sphereModelMatrix,
+    u_modelInverseTranspose:
+        new Matrix4().copy(sphereModelMatrix).invert().transpose(),
     u_viewMatrix: renderCamera.viewMatrix,
     u_projectionMatrix: renderCamera.projMatrix,
     u_matColor: scene.sphere.color,
@@ -416,9 +410,12 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
       globalUniforms);
 
   // Draw cube
+  const cubeModelMatrix =
+      new Matrix4().copy(scene.cube.transform).rotateY(rotationRadians);
   const cubeUniforms = {
-    u_modelMatrix:
-        new Matrix4().copy(scene.cube.transform).rotateY(rotationRadians),
+    u_modelMatrix: cubeModelMatrix,
+    u_modelInverseTranspose:
+        new Matrix4().copy(cubeModelMatrix).invert().transpose(),
     u_viewMatrix: renderCamera.viewMatrix,
     u_projectionMatrix: renderCamera.projMatrix,
     u_matColor: scene.cube.color,
@@ -428,8 +425,11 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
       globalUniforms);
 
   // Draw plane
+  const planeModelMatrix = scene.plane.transform;
   const planeUniforms = {
-    u_modelMatrix: scene.plane.transform,
+    u_modelMatrix: planeModelMatrix,
+    u_modelInverseTranspose:
+        new Matrix4().copy(planeModelMatrix).invert().transpose(),
     u_viewMatrix: renderCamera.viewMatrix,
     u_projectionMatrix: renderCamera.projMatrix,
     u_matColor: scene.plane.color,

@@ -64,11 +64,12 @@ export function degToRad(degrees) {
 /* ======== Private functions ======== */
 
 function initGL(canvas, id) {
-  const gl = canvas.getContext('webgl2');
+  const gl = canvas.getContext('webgl');
   if (!gl) {
     window.alert('Couldn\'t get WebGL context');
   }
   window[`gl${id}`] = gl;
+  var ext = gl.getExtension('WEBGL_depth_texture');
   return gl;
 }
 
