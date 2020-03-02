@@ -59,7 +59,10 @@ in vec4 v_shadowCoord;
 in vec3 v_lightPos;
 
 uniform float u_shadowMapSize;
-uniform vec3 u_matColor;
+uniform float u_shininess;
+uniform vec3 u_diffuseColor;
+uniform vec3 u_specularColor;
+uniform vec3 u_ambientColor;
 uniform vec3 u_lightColor;
 uniform sampler2D u_texture;
 uniform sampler2D u_shadowMap;
@@ -105,22 +108,21 @@ void main() {
   vec3 R = -reflect(L, N);
 
   // Diffuse
-  vec3 diffuse = u_lightColor * dot(L, N);
+  vec3 diffuse = u_lightColor * dot(L, N) * u_diffuseColor;
 
   // Specular
-  float shininess = 16.0;
   float specularStrength = 1.0;
   vec3 specular = vec3(0);
   if (dot(R, V) > 0.0) {
-    specular = specularStrength * pow(dot(R, V), shininess) * u_lightColor;
+    specular = specularStrength * pow(dot(R, V), u_shininess) * u_lightColor * u_specularColor;
   }
 
   // Ambient
   float ambientStrength = 0.1;
-  vec3 ambient = ambientStrength * u_lightColor;
+  vec3 ambient = ambientStrength * u_lightColor * u_ambientColor;
 
   vec3 texColor = texture(u_texture, v_texcoord).xyz;
-  vec3 result = (ambient + (specular + diffuse) * visibility) * u_matColor * texColor;
+  vec3 result = (ambient + (specular + diffuse) * visibility) * texColor;
   finalColor = vec4(result, 1.0);
 }`,
 };
@@ -259,21 +261,43 @@ function createScene(gl) {
 
   scene.sphere = {
     bufferInfo: sphereBufferInfo,
-    color: new Vector3([0.8, 0.2, 0.2]),
     transform: new Matrix4().translate([1.2, 1, 0]),
-    texture: scene.textures.blankTexture,
+    material: {
+      color: {
+        diffuse: new Vector3([0.8, 0.2, 0.2]),
+        specular: new Vector3([1.0, 1.0, 1.0]),
+        ambient: new Vector3([0.6, 0.6, 0.6]),
+      },
+      shininess: 32.0,
+      texture: scene.textures.blankTexture,
+    }
   };
   scene.plane = {
     bufferInfo: planeBufferInfo,
-    color: new Vector3([0.6, 0.6, 0.6]),
     transform: new Matrix4().translate([0, -1, -4]).scale(20),
-    texture: scene.textures.checkerboardTexture,
+    material: {
+      color: {
+        diffuse: new Vector3([0.6, 0.6, 0.6]),
+        specular: new Vector3([0.0, 0.0, 0.0]),
+        ambient: new Vector3([0.6, 0.6, 0.6]),
+      },
+      shininess: 1.0,
+      texture: scene.textures.checkerboardTexture,
+    }
   };
   scene.cube = {
     bufferInfo: cubeBufferInfo,
-    color: new Vector3([0.2, 0.8, 0.2]),
     transform: new Matrix4().translate([-1.2, 0, -3]),
-    texture: scene.textures.blankTexture,
+    material: {
+      color: {
+        diffuse: new Vector3([0.2, 0.8, 0.2]),
+        specular: new Vector3([0.2, 0.8, 0.2]),
+        ambient: new Vector3([0.6, 0.6, 0.6]),
+      },
+
+      shininess: 16.0,
+      texture: scene.textures.blankTexture,
+    }
   };
   scene.debugWindow = {
     bufferInfo: debugWindowBufferInfo,
@@ -432,8 +456,12 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
   const sphereUniforms = {
     u_modelMatrix:
         new Matrix4().copy(scene.sphere.transform).rotateY(rotationRadians),
-    u_matColor: scene.sphere.color,
-    u_texture: scene.sphere.texture,
+    u_matColor: scene.sphere.material.color,
+    u_diffuseColor: scene.sphere.material.color.diffuse,
+    u_specularColor: scene.sphere.material.color.specular,
+    u_ambientColor: scene.sphere.material.color.ambient,
+    u_texture: scene.sphere.material.texture,
+    u_shininess: scene.sphere.material.shininess,
   };
   util.drawBuffer(
       gl, programInfos.phong, scene.sphere.bufferInfo, sphereUniforms,
@@ -443,8 +471,11 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
   const cubeUniforms = {
     u_modelMatrix:
         new Matrix4().copy(scene.cube.transform).rotateY(rotationRadians),
-    u_matColor: scene.cube.color,
-    u_texture: scene.cube.texture,
+    u_diffuseColor: scene.cube.material.color.diffuse,
+    u_specularColor: scene.cube.material.color.specular,
+    u_ambientColor: scene.cube.material.color.ambient,
+    u_texture: scene.cube.material.texture,
+    u_shininess: scene.cube.material.shininess,
   };
   util.drawBuffer(
       gl, programInfos.phong, scene.cube.bufferInfo, cubeUniforms,
@@ -453,8 +484,11 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
   // Draw plane
   const planeUniforms = {
     u_modelMatrix: scene.plane.transform,
-    u_matColor: scene.plane.color,
-    u_texture: scene.plane.texture,
+    u_diffuseColor: scene.plane.material.color.diffuse,
+    u_specularColor: scene.plane.material.color.specular,
+    u_ambientColor: scene.plane.material.color.ambient,
+    u_texture: scene.plane.material.texture,
+    u_shininess: scene.plane.material.shininess,
   };
   util.drawBuffer(
       gl, programInfos.phong, scene.plane.bufferInfo, planeUniforms,
