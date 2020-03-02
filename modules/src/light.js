@@ -1,7 +1,7 @@
 'use strict';
 
 import {Vector3, Matrix4} from 'math.gl';
-import {degToRad} from '../sceneHelpers.js';
+import {degToRad} from '../util/sceneHelpers.js';
 
 export class PointLight {
   constructor(gl, position, target, up, color) {

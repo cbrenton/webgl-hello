@@ -1,7 +1,7 @@
 'use strict';
 
 import {Vector3, Matrix4} from 'math.gl';
-import {createCanvas} from '../sceneHelpers.js';
+import {createCanvas} from '../util/sceneHelpers.js';
 
 const sceneId = '2';
 const description = `
