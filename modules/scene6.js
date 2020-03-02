@@ -3,6 +3,8 @@
 import {Vector3, Matrix4} from 'math.gl';
 import * as util from './sceneHelpers.js';
 import * as twgl from 'twgl.js';
+import {parseObj} from './objParser.js';
+import * as bunny from './bunny.obj.js';
 import {Camera} from './camera.js';
 import {PointLight} from './light.js';
 
@@ -354,6 +356,8 @@ function createScene(gl) {
   const sphereBufferInfo = twgl.primitives.createSphereBufferInfo(gl, 1, 12, 6);
   const planeBufferInfo = twgl.primitives.createPlaneBufferInfo(gl, 2, 2);
   const cubeBufferInfo = twgl.primitives.createCubeBufferInfo(gl, 2);
+  const bunnyBufferInfo =
+      twgl.createBufferInfoFromArrays(gl, parseObj(bunny.objString));
   const debugWindowBufferInfo =
       twgl.primitives.createPlaneBufferInfo(gl, 0.9, 0.9);
 
@@ -404,6 +408,21 @@ function createScene(gl) {
       texture: scene.textures.blankTexture,
     }
   };
+  const bunnyYOffset = -1 + 0.340252;  // bunny obj lowest y value is -0.340252
+  scene.bunny = {
+    bufferInfo: bunnyBufferInfo,
+    transform: new Matrix4().translate(new Vector3([0, bunnyYOffset, 0])),
+    material: {
+      color: {
+        diffuse: new Vector3([0.8, 0.8, 0.8]),
+        specular: new Vector3([0.8, 0.8, 0.8]),
+        ambient: new Vector3([0.8, 0.8, 0.8]),
+      },
+      shininess: 16.0,
+      texture: scene.textures.blankTexture,
+    }
+  };
+
   scene.debugWindow = {
     bufferInfo: debugWindowBufferInfo,
   };
@@ -597,6 +616,18 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
   };
   util.drawBuffer(
       gl, programInfos.texturedPhong, scene.plane.bufferInfo, planeUniforms,
+      globalUniforms);
+
+  const bunnyUniforms = {
+    u_modelMatrix: scene.bunny.transform,
+    u_diffuseColor: scene.bunny.material.color.diffuse,
+    u_specularColor: scene.bunny.material.color.specular,
+    u_ambientColor: scene.bunny.material.color.ambient,
+    u_texture: scene.bunny.material.texture,
+    u_shininess: scene.bunny.material.shininess,
+  };
+  util.drawBuffer(
+      gl, programInfos.phong, scene.bunny.bufferInfo, bunnyUniforms,
       globalUniforms);
 }
 

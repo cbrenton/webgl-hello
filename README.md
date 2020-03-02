@@ -33,10 +33,10 @@ Hello world exercises for WebGL
 
 ## Scene 6
 ### Create a scene with bunny.obj and a plane and a single light.
-- [ ] This scene should read the bunny model in from a file.
-- [ ] The scene should demonstrate phong lighting (interpolated normals).
-- [ ] The scene should have accurate shadows via shadow mapping.
-- [ ] The plane should be texture mapped.
+- [x] This scene should read the bunny model in from a file.
+- [x] The scene should demonstrate phong lighting (interpolated normals).
+- [x] The scene should have accurate shadows via shadow mapping.
+- [x] The plane should be texture mapped.
 
 ## Scene 7 (stretch goal)
 ### Create a scene with bunny.obj, a plane, and 2 lights
