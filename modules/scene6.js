@@ -411,7 +411,7 @@ function createScene(gl) {
   const bunnyYOffset = -1 + 0.340252;  // bunny obj lowest y value is -0.340252
   scene.bunny = {
     bufferInfo: bunnyBufferInfo,
-    transform: new Matrix4().translate(new Vector3([0, bunnyYOffset, 0])),
+    transform: new Matrix4().translate(new Vector3([1, bunnyYOffset, -1])),
     material: {
       color: {
         diffuse: new Vector3([0.8, 0.8, 0.8]),
@@ -439,7 +439,7 @@ function setupCamera(gl) {
 }
 
 function setupLight(gl) {
-  const position = new Vector3([30, 30, 30]);
+  const position = new Vector3([30, 30, 20]);
   const target = new Vector3([0, 0, -2]);
   const up = new Vector3([0, 1, 0]);
   const color = new Vector3([1, 1, 1]);
@@ -594,8 +594,7 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
 
   // Draw cube
   const cubeUniforms = {
-    u_modelMatrix:
-        new Matrix4().copy(scene.cube.transform).rotateY(rotationRadians),
+    u_modelMatrix: scene.cube.transform,
     u_diffuseColor: scene.cube.material.color.diffuse,
     u_specularColor: scene.cube.material.color.specular,
     u_ambientColor: scene.cube.material.color.ambient,
@@ -619,7 +618,8 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
       globalUniforms);
 
   const bunnyUniforms = {
-    u_modelMatrix: scene.bunny.transform,
+    u_modelMatrix:
+        new Matrix4().copy(scene.bunny.transform).rotateY(-rotationRadians),
     u_diffuseColor: scene.bunny.material.color.diffuse,
     u_specularColor: scene.bunny.material.color.specular,
     u_ambientColor: scene.bunny.material.color.ambient,
