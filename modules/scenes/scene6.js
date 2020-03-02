@@ -4,7 +4,7 @@ import {Vector3, Matrix4} from 'math.gl';
 import * as util from '../sceneHelpers.js';
 import * as twgl from 'twgl.js';
 import {parseObj} from '../objParser.js';
-import * as bunny from '../bunny.obj.js';
+import * as bunny from '../models/bunny.obj.js';
 import {Camera} from '../camera.js';
 import {PointLight} from '../light.js';
 
