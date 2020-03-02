@@ -77,7 +77,7 @@ void main() {
   float shadowMapDepth = texture(u_shadowMap, shadowCoord.xy).r;
 
   float visibility = 0.0;
-  float bias = 0.0001;
+  float bias = 0.00002;
 
   if (cameraDepth - shadowMapDepth < bias) {
     visibility += 1.0;
@@ -289,7 +289,7 @@ function setupCamera(gl) {
 }
 
 function setupLight(gl) {
-  const position = new Vector3([14, 14, 10]);
+  const position = new Vector3([30, 30, 30]);
   const target = new Vector3([0, 0, -2]);
   const up = new Vector3([0, 1, 0]);
   const color = new Vector3([1, 1, 1]);
@@ -389,6 +389,7 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
 
   gl.clearColor(0.58, 0.78, 0.85, 1);
   gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.CULL_FACE);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   const globalUniforms = {
@@ -442,6 +443,7 @@ function drawHUD(gl, programInfos, scene) {
   if (!window.showHUD) {
     return;
   }
+  gl.disable(gl.CULL_FACE);
   // Draw texture debug window
   const hudUniforms = {
     u_modelMatrix: scene.hud.transform,
