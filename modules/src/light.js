@@ -21,7 +21,7 @@ export class PointLight {
     });
 
     this.aspect = 1.0;
-    this.projMatrix = new Matrix4().projMatrix = new Matrix4().perspective(
+    this.projMatrix = new Matrix4().perspective(
         {fov: this.fov, aspect: this.aspect, near: this.near, far: this.far});
   }
 
