@@ -4,15 +4,21 @@ import {Vector3, Matrix4} from 'math.gl';
 import {degToRad} from '../util/sceneHelpers.js';
 
 export class PointLight {
-  constructor(gl, position, target, up, color) {
+  constructor(gl, position, target, color) {
     this.position = position;
     this.target = target;
-    this.up = up;
+    this.up = new Vector3([0, 1, 0]);
+    // Use [0, 1, 0] as the up vector except when the light direction is
+    // straight up or down
+    if (position.x === target.x && position.z === target.z) {
+      this.up = new Vector3([0, 0, 1]);
+    }
     this.color = color;
+    this.isPerspective = false;
 
     this.fov = degToRad(90);
     this.near = 0.1;
-    this.far = 1000.0;
+    this.far = 100.0;
 
     this.viewMatrix = new Matrix4().lookAt({
       eye: this.position,
@@ -21,8 +27,22 @@ export class PointLight {
     });
 
     this.aspect = 1.0;
-    this.projMatrix = new Matrix4().perspective(
-        {fov: this.fov, aspect: this.aspect, near: this.near, far: this.far});
+
+    // @TODO: eventually break this out into a PointLight class and pass more
+    // info into the shader (e.g. light type and far plane distance)
+    if (this.isPerspective) {
+      this.projMatrix = new Matrix4().perspective(
+          {fov: this.fov, aspect: this.aspect, near: this.near, far: this.far});
+    }
+
+    this.projMatrix = new Matrix4().ortho({
+      left: -30,
+      right: 30,
+      bottom: -30,
+      top: 30,
+      near: this.near,
+      far: this.far,
+    });
   }
 
   getViewProjectionMatrix() {

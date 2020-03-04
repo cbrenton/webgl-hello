@@ -62,7 +62,7 @@ void main() {
   float shadowMapDepth = texture(u_shadowMap, shadowCoord.xy).r;
 
   float visibility = 0.0;
-  float bias = 0.00002;
+  float bias = 0.001;
 
   if (cameraDepth - shadowMapDepth < bias) {
     visibility += 1.0;
@@ -171,7 +171,7 @@ void main() {
   float shadowMapDepth = texture(u_shadowMap, shadowCoord.xy).r;
 
   float visibility = 0.0;
-  float bias = 0.00002;
+  float bias = 0.001;
 
   if (cameraDepth - shadowMapDepth < bias) {
     visibility += 1.0;
@@ -288,8 +288,7 @@ float linearize(float depth) {
 
 void main() {
   float z = texture(u_texture, v_texcoord).r;
-  float grey = linearize(z);
-  finalColor = vec4(grey, grey, grey, 1);
+  finalColor = vec4(z, z, z, 1);
 }`,
 };
 

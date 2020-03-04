@@ -34,7 +34,8 @@ export default function render() {
 
 function createScene(gl) {
   twgl.setAttributePrefix('a_');
-  const sphereBufferInfo = twgl.primitives.createSphereBufferInfo(gl, 1, 12, 6);
+  const sphereBufferInfo =
+      twgl.primitives.createSphereBufferInfo(gl, 1, 24, 12);
   const planeBufferInfo = twgl.primitives.createPlaneBufferInfo(gl, 2, 2);
   const cubeBufferInfo = twgl.primitives.createCubeBufferInfo(gl, 2);
   const bunnyBufferInfo =
@@ -120,11 +121,10 @@ function setupCamera(gl) {
 }
 
 function setupLight(gl) {
-  const position = new Vector3([30, 30, 20]);
-  const target = new Vector3([0, 0, -2]);
-  const up = new Vector3([0, 1, 0]);
+  const position = new Vector3([30, 30, -10]);
+  const target = new Vector3([0, 0, 0]);
   const color = new Vector3([1, 1, 1]);
-  return new PointLight(gl, position, target, up, color);
+  return new PointLight(gl, position, target, color);
 }
 
 function setupHUD(scene) {
