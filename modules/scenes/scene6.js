@@ -24,6 +24,7 @@ window.cameraPosition = new Vector3([0, 20, 50]);
 window.cameraTarget = new Vector3([0, 2, -4]);
 window.lightPosition = new Vector3([0, 10, 5]);
 window.lightTarget = new Vector3([0, 0, -4]);
+window.showLights = false;
 window.hudTex = 0;
 window.freeze = false;
 
@@ -322,6 +323,23 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVPs, timestamp) {
     u_useSoftShadows: window.useSoftShadows,
     u_bias: window.shadowMapBias,
   };
+
+  // Render fake lights
+  if (renderCamera.tag === 'camera' && window.showLights) {
+    for (let i = 0; i < scene.lights.length; ++i) {
+      const lightUniforms = {
+        u_modelMatrix: new Matrix4().translate(scene.lights[i].position),
+        u_diffuseColor: new Vector3([0, 0, 0]),
+        u_specularColor: new Vector3([0, 0, 0]),
+        u_ambientColor: new Vector3([0, 0, 0]),
+        u_emissiveColor: new Vector3([0, 0, 1]),
+        u_shininess: 1.0,
+      };
+      util.drawBuffer(
+          gl, programInfos.phong, scene.sphere.bufferInfo, lightUniforms,
+          globalUniforms);
+    }
+  }
 
   // Draw sphere
   const sphereUniforms = {
