@@ -266,12 +266,6 @@ uniform sampler2D u_texture;
 
 out vec4 finalColor;
 
-float linearize(float depth) {
-  float near = 0.1;
-  float far = 100.0;
-  return (2.0 * near) / (far + near - depth * (far - near));
-}
-
 void main() {
   finalColor = texture(u_texture, v_texcoord);
 }`,

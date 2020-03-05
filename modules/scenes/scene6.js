@@ -133,7 +133,7 @@ function setupHUD(scene) {
     viewMatrix: new Matrix4(),
     projMatrix: new Matrix4().ortho(
         {left: -1, right: 1, bottom: -1, top: 1, near: 0.1, far: 10}),
-    texture: scene.shadowMap.textures.depth,
+    texture: scene.shadowMap.textures.color,
     transform:
         new Matrix4().translate([0.5, 0.5, 0]).rotateX(util.degToRad(-90)),
   };
