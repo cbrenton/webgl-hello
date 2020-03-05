@@ -22,9 +22,10 @@ window.useSoftShadows = true;
 window.shadowMapBias = 0.002;
 window.cameraPosition = new Vector3([0, 20, 50]);
 window.cameraTarget = new Vector3([0, 2, -4]);
-window.lightPosition = new Vector3([0, 20, 10]);
+window.lightPosition = new Vector3([0, 10, 5]);
 window.lightTarget = new Vector3([0, 0, -4]);
 window.hudTex = 0;
+window.freeze = false;
 
 export default function render() {
   const gl = util.createGLCanvas(sceneId, description);
@@ -136,8 +137,8 @@ function setupLights(gl) {
     lights.push(new PointLight(gl, position, target, color));
   }
   {
-    const position = new Vector3([10, 10, 0]);
-    const target = new Vector3([10, 0, -4]);
+    const position = new Vector3([5, 10, -10]);
+    const target = new Vector3([-5, 0, -5]);
     const color = new Vector3([0, 1, 0]);
     lights.push(new PointLight(gl, position, target, color));
   }
@@ -255,7 +256,6 @@ function setupShadowMaps(gl, lights) {
     };
     shadowMaps.push(shadowMapObj);
   }
-  console.log(shadowMaps);
   return shadowMaps;
 }
 
@@ -293,7 +293,10 @@ function drawFrame(gl, programInfos, scene, timestamp) {
 function drawScene(gl, programInfos, scene, renderCamera, lightVPs, timestamp) {
   const elapsedMs = timestamp - startTime;
   const msPerRotation = 8000;
-  const rotationRadians = 2 * Math.PI * (elapsedMs / msPerRotation);
+  let rotationRadians = Math.PI / 2.0;  // initial rotation
+  if (!window.freeze) {
+    rotationRadians += 2 * Math.PI * (elapsedMs / msPerRotation);
+  }
 
   gl.clearColor(0.58, 0.78, 0.85, 1);
   gl.enable(gl.DEPTH_TEST);
