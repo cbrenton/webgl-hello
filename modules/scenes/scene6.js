@@ -24,6 +24,7 @@ window.cameraPosition = new Vector3([0, 20, 50]);
 window.cameraTarget = new Vector3([0, 2, -4]);
 window.lightPosition = new Vector3([0, 20, 10]);
 window.lightTarget = new Vector3([0, 0, -4]);
+window.hudTex = 0;
 
 export default function render() {
   const gl = util.createGLCanvas(sceneId, description);
@@ -54,7 +55,7 @@ function createScene(gl) {
   scene.camera = setupCamera(gl);
   scene.lights = setupLights(gl);
   scene.textures = createTextures(gl);
-  scene.shadowMap = setupShadowMap(gl);
+  scene.shadowMaps = setupShadowMaps(gl, scene.lights);
   scene.hud = setupHUD(scene);
 
   scene.sphere = {
@@ -148,7 +149,10 @@ function setupHUD(scene) {
     viewMatrix: new Matrix4(),
     projMatrix: new Matrix4().ortho(
         {left: -1, right: 1, bottom: -1, top: 1, near: 0.1, far: 10}),
-    texture: scene.shadowMap.textures.color,
+    textures: [
+      scene.shadowMaps[0].textures.color,
+      scene.shadowMaps[1].textures.color,
+    ],
     transform:
         new Matrix4().translate([0.5, 0.5, 0]).rotateX(util.degToRad(-90)),
   };
@@ -206,44 +210,53 @@ function createTextures(gl) {
   return textures;
 }
 
-function setupShadowMap(gl) {
+function setupShadowMaps(gl, lights) {
+  const shadowMaps = [];
   const size = 2048;
-  const depthFramebuffer = gl.createFramebuffer();
-  gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
 
-  // Color texture for framebuffer
-  const renderedTexture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, renderedTexture);
-  gl.texImage2D(
-      gl.TEXTURE_2D, 0, gl.RGB, size, size, 0, gl.RGB, gl.UNSIGNED_BYTE, null);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-  gl.framebufferTexture2D(
-      gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, renderedTexture, 0);
+  for (let i = 0; i < lights.length; ++i) {
+    const depthFramebuffer = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
 
-  // Create depth buffer for framebuffer
-  const depthTexture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, depthTexture);
-  gl.texImage2D(
-      gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT32F, size, size, 0,
-      gl.DEPTH_COMPONENT, gl.FLOAT, null);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(
-      gl.TEXTURE_2D, gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE);
-  gl.framebufferTexture2D(
-      gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthTexture, 0);
+    // Color texture for framebuffer
+    const renderedTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, renderedTexture);
+    gl.texImage2D(
+        gl.TEXTURE_2D, 0, gl.RGB, size, size, 0, gl.RGB, gl.UNSIGNED_BYTE,
+        null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.framebufferTexture2D(
+        gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, renderedTexture,
+        0);
 
-  gl.bindTexture(gl.TEXTURE_2D, null);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    // Create depth buffer for framebuffer
+    const depthTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, depthTexture);
+    gl.texImage2D(
+        gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT32F, size, size, 0,
+        gl.DEPTH_COMPONENT, gl.FLOAT, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(
+        gl.TEXTURE_2D, gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE);
+    gl.framebufferTexture2D(
+        gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthTexture, 0);
 
-  return {
-    framebuffer: depthFramebuffer,
-    textures: {depth: depthTexture, color: renderedTexture},
-    bufferSize: size,
-  };
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    const shadowMapObj = {
+      framebuffer: depthFramebuffer,
+      textures: {depth: depthTexture, color: renderedTexture},
+      bufferSize: size,
+    };
+    shadowMaps.push(shadowMapObj);
+  }
+  console.log(shadowMaps);
+  return shadowMaps;
 }
 
 function drawFrame(gl, programInfos, scene, timestamp) {
@@ -252,18 +265,24 @@ function drawFrame(gl, programInfos, scene, timestamp) {
   scene.lights[0].position = window.lightPosition;
   scene.lights[0].target = window.lightTarget;
 
-  // Draw to texture
-  gl.bindFramebuffer(gl.FRAMEBUFFER, scene.shadowMap.framebuffer);
-  gl.viewport(0, 0, scene.shadowMap.bufferSize, scene.shadowMap.bufferSize);
-  drawScene(
-      gl, programInfos.depth, scene, scene.lights[0], new Matrix4(), timestamp);
+  // Draw to texture for each shadow map
+  for (let i = 0; i < scene.shadowMaps.length; ++i) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, scene.shadowMaps[i].framebuffer);
+    gl.viewport(
+        0, 0, scene.shadowMaps[i].bufferSize, scene.shadowMaps[i].bufferSize);
+    drawScene(
+        gl, programInfos.depth, scene, scene.lights[i], new Matrix4(),
+        timestamp);
+  }
 
   // Draw to canvas
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-  drawScene(
-      gl, programInfos.render, scene, scene.camera,
-      scene.lights[0].getViewProjectionMatrix(), timestamp);
+  const lightVPs = [];
+  for (let i = 0; i < scene.lights.length; ++i) {
+    lightVPs.push(scene.lights[i].getViewProjectionMatrix());
+  }
+  drawScene(gl, programInfos.render, scene, scene.camera, lightVPs, timestamp);
   drawHUD(gl, programInfos.render, scene);
 
   requestAnimationFrame(function(timestamp) {
@@ -271,7 +290,7 @@ function drawFrame(gl, programInfos, scene, timestamp) {
   });
 }
 
-function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
+function drawScene(gl, programInfos, scene, renderCamera, lightVPs, timestamp) {
   const elapsedMs = timestamp - startTime;
   const msPerRotation = 8000;
   const rotationRadians = 2 * Math.PI * (elapsedMs / msPerRotation);
@@ -290,9 +309,9 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
     u_cameraPos: renderCamera.position,
     u_viewMatrix: renderCamera.viewMatrix,
     u_projectionMatrix: renderCamera.projMatrix,
-    u_depthVP: lightVP,
-    u_shadowMap: scene.shadowMap.textures.depth,
-    u_shadowMapSize: scene.shadowMap.bufferSize,
+    u_depthVP: lightVPs[0],
+    u_shadowMap: scene.shadowMaps[0].textures.depth,
+    u_shadowMapSize: scene.shadowMaps[0].bufferSize,
     u_useSoftShadows: window.useSoftShadows,
     u_bias: window.shadowMapBias,
   };
@@ -362,7 +381,7 @@ function drawHUD(gl, programInfos, scene) {
     u_modelMatrix: scene.hud.transform,
     u_viewMatrix: scene.hud.viewMatrix,
     u_projectionMatrix: scene.hud.projMatrix,
-    u_texture: scene.hud.texture,
+    u_texture: scene.hud.textures[window.hudTex],
   };
   util.drawBuffer(
       gl, programInfos.hud, scene.debugWindow.bufferInfo, hudUniforms);
