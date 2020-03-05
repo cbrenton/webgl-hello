@@ -52,6 +52,7 @@ uniform float u_shadowMapSize;
 uniform float u_bias;
 
 uniform vec3 u_lightColor;
+uniform vec3 u_lightDir;
 uniform vec3 u_ambientColor;
 uniform vec3 u_diffuseColor;
 uniform vec3 u_specularColor;
@@ -59,6 +60,19 @@ uniform float u_shininess;
 `;
 
 phong.frag.phongFrag = `
+float getSpotFactor() {
+  vec3 L = normalize(v_lightDir);
+  vec3 D = normalize(u_lightDir);
+
+  float cosineCutoff = cos(radians(45.0));
+  float spotExponent = 30.0;
+
+  float spotCosine = dot(D, -L);
+  if (spotCosine >= cosineCutoff) {
+    return pow(spotCosine, spotExponent);
+  }
+  return 0.0;
+}
 
 float shadowFactor(
     sampler2DShadow shadowMap,
@@ -106,19 +120,22 @@ vec3 lightContrib(
       bias,
       useSoftShadows);
 
+  // Spotlight
+  float spotFactor = getSpotFactor();
+ 
   // Diffuse
-  vec3 diffuse = u_lightColor * max(dot(L, N), 0.0) * u_diffuseColor;
+  vec3 diffuse = lightColor * max(dot(L, N), 0.0) * u_diffuseColor;
 
   // Specular
   float specularStrength = 1.0;
-  vec3 specular = u_lightColor * u_specularColor;
+  vec3 specular = lightColor * u_specularColor;
   specular *= specularStrength * pow(max(dot(R, V), 0.0), u_shininess);
 
   // Ambient
   float ambientStrength = 0.1;
   vec3 ambient = ambientStrength * u_lightColor * u_ambientColor;
-
-  return (diffuse + specular) * visibility + ambient;
+  
+  return (diffuse + specular) * visibility * spotFactor + ambient;
 }
 
 vec3 phongFrag() {
