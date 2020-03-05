@@ -1,7 +1,7 @@
 'use strict';
 
 import {Vector3, Matrix4} from 'math.gl';
-import * as util from '../util/sceneHelpers.js';
+import * as util from '../util/scene-helpers.js';
 import * as twgl from 'twgl.js';
 import {Camera} from '../src/camera.js';
 import {PointLight} from '../src/light.js';

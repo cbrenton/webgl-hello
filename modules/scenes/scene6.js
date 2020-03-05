@@ -1,9 +1,9 @@
 'use strict';
 
 import {Vector3, Matrix4} from 'math.gl';
-import * as util from '../util/sceneHelpers.js';
+import * as util from '../util/scene-helpers.js';
 import * as twgl from 'twgl.js';
-import {parseObj} from '../util/objParser.js';
+import {parseObj} from '../util/obj-parser.js';
 import * as bunny from '../models/bunny.obj.js';
 import {Camera} from '../src/camera.js';
 import {PointLight} from '../src/light.js';
