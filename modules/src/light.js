@@ -35,11 +35,12 @@ export class PointLight {
           {fov: this.fov, aspect: this.aspect, near: this.near, far: this.far});
     }
 
+    const orthoSize = 30;
     this.projMatrix = new Matrix4().ortho({
-      left: -30,
-      right: 30,
-      bottom: -30,
-      top: 30,
+      left: -orthoSize,
+      right: orthoSize,
+      bottom: -orthoSize,
+      top: orthoSize,
       near: this.near,
       far: this.far,
     });
