@@ -35,6 +35,7 @@ void main() {
 }`,
   fs: `#version 300 es
 precision mediump float;
+precision highp sampler2DShadow;
 
 in vec3 v_normal;
 in vec3 v_viewVec;
@@ -43,51 +44,43 @@ in vec3 v_lightPos;
 
 uniform float u_shadowMapSize;
 uniform float u_shininess;
+uniform float u_bias;
 uniform vec3 u_diffuseColor;
 uniform vec3 u_specularColor;
 uniform vec3 u_ambientColor;
 uniform vec3 u_lightColor;
-uniform sampler2D u_shadowMap;
+uniform sampler2DShadow u_shadowMap;
 uniform bool u_useSoftShadows;
 
 out vec4 finalColor;
 
 void main() {
-  vec3 normal = normalize(v_normal);
+  vec3 L = normalize(v_lightPos);
+  vec3 N = normalize(v_normal);
+  vec3 V = normalize(v_viewVec);
+  vec3 R = -reflect(L, N);
 
-  // Convert 3D world position to clip space (0 to 1)
-  vec3 shadowCoord = v_shadowCoord.xyz / v_shadowCoord.w;
+  vec4 shadowMapCoord = v_shadowCoord;
+  shadowMapCoord.z -= u_bias;
 
-  float cameraDepth = shadowCoord.z;
-  float shadowMapDepth = texture(u_shadowMap, shadowCoord.xy).r;
+  float visibility = textureProj(u_shadowMap, shadowMapCoord);
 
-  float visibility = 0.0;
-  float bias = 0.001;
-
-  if (cameraDepth - shadowMapDepth < bias) {
-    visibility += 1.0;
-  }
-
+  // @TODO: clean this up
   if (u_useSoftShadows) {
     float count = 1.0;
     for (float y = -1.5; y <= 1.5; y += 1.0) {
       for (float x = -1.5; x <= 1.5; x += 1.0) {
         vec2 shadowMapSize = 1.0f / vec2(u_shadowMapSize);
         vec2 texOffset = vec2(x * shadowMapSize.x, y * shadowMapSize.y);
-        float tmpShadowDepth = texture(u_shadowMap, shadowCoord.xy + texOffset).r;
-        if (cameraDepth - tmpShadowDepth < bias) {
-          visibility += 1.0;
-        }
+        vec4 tmpShadowCoord = v_shadowCoord;
+        tmpShadowCoord.xy += texOffset;
+        tmpShadowCoord.z -= u_bias;
+        visibility += textureProj(u_shadowMap, tmpShadowCoord);
         count += 1.0;
       }
     }
     visibility /= count;
   }
-
-  vec3 L = normalize(v_lightPos);
-  vec3 N = normal;
-  vec3 V = normalize(v_viewVec);
-  vec3 R = -reflect(L, N);
 
   // Diffuse
   vec3 diffuse = u_lightColor * dot(L, N) * u_diffuseColor;
@@ -103,7 +96,7 @@ void main() {
   float ambientStrength = 0.1;
   vec3 ambient = ambientStrength * u_lightColor * u_ambientColor;
 
-  vec3 result = (ambient + (specular + diffuse) * visibility);;
+  vec3 result = ((specular + diffuse) * visibility + ambient);
   finalColor = vec4(result, 1.0);
 }`,
 };
@@ -142,6 +135,7 @@ void main() {
 }`,
   fs: `#version 300 es
 precision mediump float;
+precision highp sampler2DShadow;
 
 in vec2 v_texcoord;
 in vec3 v_normal;
@@ -156,47 +150,39 @@ uniform vec3 u_specularColor;
 uniform vec3 u_ambientColor;
 uniform vec3 u_lightColor;
 uniform sampler2D u_texture;
-uniform sampler2D u_shadowMap;
+uniform sampler2DShadow u_shadowMap;
 uniform bool u_useSoftShadows;
+uniform float u_bias;
 
 out vec4 finalColor;
 
 void main() {
-  vec3 normal = normalize(v_normal);
+  vec3 L = normalize(v_lightPos);
+  vec3 N = normalize(v_normal);
+  vec3 V = normalize(v_viewVec);
+  vec3 R = -reflect(L, N);
 
-  // Convert 3D world position to clip space (0 to 1)
-  vec3 shadowCoord = v_shadowCoord.xyz / v_shadowCoord.w;
+  vec4 shadowMapCoord = v_shadowCoord;
+  shadowMapCoord.z -= u_bias;
 
-  float cameraDepth = shadowCoord.z;
-  float shadowMapDepth = texture(u_shadowMap, shadowCoord.xy).r;
+  float visibility = textureProj(u_shadowMap, shadowMapCoord);
 
-  float visibility = 0.0;
-  float bias = 0.001;
-
-  if (cameraDepth - shadowMapDepth < bias) {
-    visibility += 1.0;
-  }
-
+  // @TODO: clean this up
   if (u_useSoftShadows) {
     float count = 1.0;
     for (float y = -1.5; y <= 1.5; y += 1.0) {
       for (float x = -1.5; x <= 1.5; x += 1.0) {
         vec2 shadowMapSize = 1.0f / vec2(u_shadowMapSize);
         vec2 texOffset = vec2(x * shadowMapSize.x, y * shadowMapSize.y);
-        float tmpShadowDepth = texture(u_shadowMap, shadowCoord.xy + texOffset).r;
-        if (cameraDepth - tmpShadowDepth < bias) {
-          visibility += 1.0;
-        }
+        vec4 tmpShadowCoord = v_shadowCoord;
+        tmpShadowCoord.xy += texOffset;
+        tmpShadowCoord.z -= u_bias;
+        visibility += textureProj(u_shadowMap, tmpShadowCoord);
         count += 1.0;
       }
     }
     visibility /= count;
   }
-
-  vec3 L = normalize(v_lightPos);
-  vec3 N = normal;
-  vec3 V = normalize(v_viewVec);
-  vec3 R = -reflect(L, N);
 
   // Diffuse
   vec3 diffuse = u_lightColor * dot(L, N) * u_diffuseColor;
@@ -213,7 +199,7 @@ void main() {
   vec3 ambient = ambientStrength * u_lightColor * u_ambientColor;
 
   vec3 texColor = texture(u_texture, v_texcoord).xyz;
-  vec3 result = (ambient + (specular + diffuse) * visibility) * texColor;
+  vec3 result = ((specular + diffuse) * visibility + ambient) * texColor;
   finalColor = vec4(result, 1.0);
 }`,
 };

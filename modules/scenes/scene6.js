@@ -18,6 +18,7 @@ and soft shadows via shadow mapping.
 const startTime = performance.now();
 
 window.useSoftShadows = true;
+window.shadowMapBias = 0.002;
 
 export default function render() {
   const gl = util.createGLCanvas(sceneId, description);
@@ -121,7 +122,7 @@ function setupCamera(gl) {
 }
 
 function setupLight(gl) {
-  const position = new Vector3([30, 30, -10]);
+  const position = new Vector3([30, 20, -10]);
   const target = new Vector3([0, 0, 0]);
   const color = new Vector3([1, 1, 1]);
   return new PointLight(gl, position, target, color);
@@ -211,10 +212,12 @@ function setupShadowMap(gl) {
   gl.texImage2D(
       gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT32F, size, size, 0,
       gl.DEPTH_COMPONENT, gl.FLOAT, null);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(
+      gl.TEXTURE_2D, gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE);
   gl.framebufferTexture2D(
       gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthTexture, 0);
 
@@ -268,6 +271,7 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
     u_shadowMap: scene.shadowMap.textures.depth,
     u_shadowMapSize: scene.shadowMap.bufferSize,
     u_useSoftShadows: window.useSoftShadows,
+    u_bias: window.shadowMapBias,
   }
 
   // Draw sphere
@@ -297,19 +301,7 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
       gl, programInfos.phong, scene.cube.bufferInfo, cubeUniforms,
       globalUniforms);
 
-  // Draw plane
-  const planeUniforms = {
-    u_modelMatrix: scene.plane.transform,
-    u_diffuseColor: scene.plane.material.color.diffuse,
-    u_specularColor: scene.plane.material.color.specular,
-    u_ambientColor: scene.plane.material.color.ambient,
-    u_texture: scene.plane.material.texture,
-    u_shininess: scene.plane.material.shininess,
-  };
-  util.drawBuffer(
-      gl, programInfos.texturedPhong, scene.plane.bufferInfo, planeUniforms,
-      globalUniforms);
-
+  // Draw bunny
   const bunnyUniforms = {
     u_modelMatrix:
         new Matrix4().copy(scene.bunny.transform).rotateY(-rotationRadians),
@@ -321,6 +313,19 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
   };
   util.drawBuffer(
       gl, programInfos.phong, scene.bunny.bufferInfo, bunnyUniforms,
+      globalUniforms);
+
+  // Draw plane
+  const planeUniforms = {
+    u_modelMatrix: scene.plane.transform,
+    u_diffuseColor: scene.plane.material.color.diffuse,
+    u_specularColor: scene.plane.material.color.specular,
+    u_ambientColor: scene.plane.material.color.ambient,
+    u_texture: scene.plane.material.texture,
+    u_shininess: scene.plane.material.shininess,
+  };
+  util.drawBuffer(
+      gl, programInfos.texturedPhong, scene.plane.bufferInfo, planeUniforms,
       globalUniforms);
 }
 
