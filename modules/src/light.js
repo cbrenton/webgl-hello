@@ -21,22 +21,26 @@ export class PointLight {
     this.near = 0.1;
     this.far = 100.0;
 
-    this.viewMatrix = new Matrix4().lookAt({
+    this.aspect = 1.0;
+  }
+
+  get viewMatrix() {
+    return new Matrix4().lookAt({
       eye: this.position,
       center: this.target,
       up: this.up,
     });
+  }
 
-    this.aspect = 1.0;
-
+  get projMatrix() {
     // @TODO: eventually break this out into a PointLight class and pass more
     // info into the shader (e.g. light type and far plane distance)
     if (this.isPerspective) {
-      this.projMatrix = new Matrix4().perspective(
+      return new Matrix4().perspective(
           {fov: this.fov, aspect: this.aspect, near: this.near, far: this.far});
     } else {
       const orthoSize = 30;
-      this.projMatrix = new Matrix4().ortho({
+      return new Matrix4().ortho({
         left: -orthoSize,
         right: orthoSize,
         bottom: -orthoSize,
@@ -49,7 +53,7 @@ export class PointLight {
 
   getViewProjectionMatrix() {
     const lightVP = new Matrix4();
-    // Convert from [-1, 1] to [0, 0]
+    // Convert from [-1, 1] to [0, 1]
     lightVP.translate(new Vector3([0.5, 0.5, 0.5]));
     lightVP.scale(new Vector3([0.5, 0.5, 0.5]));
     lightVP.multiplyRight(this.projMatrix);

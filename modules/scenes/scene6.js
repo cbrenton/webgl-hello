@@ -20,6 +20,10 @@ const startTime = performance.now();
 
 window.useSoftShadows = true;
 window.shadowMapBias = 0.002;
+window.cameraPosition = new Vector3([0, 2, 10]);
+window.cameraTarget = new Vector3([0, 2, -4]);
+window.lightPosition = new Vector3([30, 20, 10]);
+window.lightTarget = new Vector3([0, 0, -4]);
 
 export default function render() {
   const gl = util.createGLCanvas(sceneId, description);
@@ -115,16 +119,16 @@ function createScene(gl) {
 }
 
 function setupCamera(gl) {
-  const position = new Vector3([0, 2, 10]);
-  const target = new Vector3([0, 0, -4]);
+  const position = window.cameraPosition;
+  const target = window.cameraTarget;
   const up = new Vector3([0, 1, 0]);
   const fovDegrees = 45;
   return new Camera(gl, position, target, up, fovDegrees);
 }
 
 function setupLight(gl) {
-  const position = new Vector3([30, 20, -10]);
-  const target = new Vector3([0, 0, 0]);
+  const position = window.lightPosition;
+  const target = window.lightTarget;
   const color = new Vector3([1, 1, 1]);
   return new PointLight(gl, position, target, color);
 }
@@ -233,6 +237,11 @@ function setupShadowMap(gl) {
 }
 
 function drawFrame(gl, programInfos, scene, timestamp) {
+  scene.camera.target = window.cameraTarget;
+  scene.camera.position = window.cameraPosition;
+  scene.light.position = window.lightPosition;
+  scene.light.target = window.lightTarget;
+
   // Draw to texture
   gl.bindFramebuffer(gl.FRAMEBUFFER, scene.shadowMap.framebuffer);
   gl.viewport(0, 0, scene.shadowMap.bufferSize, scene.shadowMap.bufferSize);
@@ -273,7 +282,7 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
     u_shadowMapSize: scene.shadowMap.bufferSize,
     u_useSoftShadows: window.useSoftShadows,
     u_bias: window.shadowMapBias,
-  }
+  };
 
   // Draw sphere
   const sphereUniforms = {

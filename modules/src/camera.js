@@ -14,11 +14,15 @@ export class Camera {
         parseFloat(gl.canvas.clientWidth) / parseFloat(gl.canvas.clientHeight);
     this.near = 0.1;
     this.far = 100.0;
+  }
 
-    this.viewMatrix = new Matrix4().lookAt(
+  get viewMatrix() {
+    return new Matrix4().lookAt(
         {eye: this.position, center: this.target, up: this.up});
+  }
 
-    this.projMatrix = new Matrix4().perspective(
+  get projMatrix() {
+    return new Matrix4().perspective(
         {fov: this.fov, aspect: this.aspect, near: this.near, far: this.far});
   }
 }
