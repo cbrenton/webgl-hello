@@ -59,33 +59,52 @@ uniform float u_shininess;
 `;
 
 phong.frag.phongFrag = `
-vec3 phongFrag() {
-  vec3 L = normalize(v_lightDir);
-  vec3 N = normalize(v_normal);
-  vec3 V = normalize(v_viewVec);
-  vec3 R = -reflect(L, N);
 
+float shadowFactor(
+    sampler2DShadow shadowMap,
+    float shadowMapSize,
+    float bias,
+    bool useSoftShadows) {
   vec4 shadowMapCoord = v_shadowCoord;
-  shadowMapCoord.z -= u_bias;
+  shadowMapCoord.z -= bias;
+  float visibility = textureProj(shadowMap, shadowMapCoord);
 
-  float visibility = textureProj(u_shadowMap, shadowMapCoord);
-
-  // @TODO: clean this up
-  if (u_useSoftShadows) {
+  if (useSoftShadows) {
     float count = 1.0;
     for (float y = -1.5; y <= 1.5; y += 1.0) {
       for (float x = -1.5; x <= 1.5; x += 1.0) {
-        vec2 shadowMapSize = 1.0f / vec2(u_shadowMapSize);
-        vec2 texOffset = vec2(x * shadowMapSize.x, y * shadowMapSize.y);
+        vec2 size = 1.0f / vec2(shadowMapSize);
+        vec2 texOffset = vec2(x * size.x, y * size.y);
         vec4 tmpShadowCoord = v_shadowCoord;
         tmpShadowCoord.xy += texOffset;
-        tmpShadowCoord.z -= u_bias;
-        visibility += textureProj(u_shadowMap, tmpShadowCoord);
+        tmpShadowCoord.z -= bias;
+        visibility += textureProj(shadowMap, tmpShadowCoord);
         count += 1.0;
       }
     }
     visibility /= count;
   }
+  return visibility;
+}
+
+vec3 lightContrib(
+    vec3 lightDir,
+    vec3 lightColor,
+    sampler2DShadow shadowMap,
+    float shadowMapSize,
+    float bias,
+    bool useSoftShadows) {
+  vec3 L = normalize(lightDir);
+  vec3 N = normalize(v_normal);
+  vec3 V = normalize(v_viewVec);
+  vec3 R = -reflect(L, N);
+
+  // Shadows
+  float visibility = shadowFactor(
+      shadowMap,
+      shadowMapSize,
+      bias,
+      useSoftShadows);
 
   // Diffuse
   vec3 diffuse = u_lightColor * max(dot(L, N), 0.0) * u_diffuseColor;
@@ -99,7 +118,17 @@ vec3 phongFrag() {
   float ambientStrength = 0.1;
   vec3 ambient = ambientStrength * u_lightColor * u_ambientColor;
 
-  return (specular + diffuse) * visibility + ambient;
+  return (diffuse + specular) * visibility + ambient;
+}
+
+vec3 phongFrag() {
+  return lightContrib(
+      v_lightDir,
+      u_lightColor,
+      u_shadowMap,
+      u_shadowMapSize,
+      u_bias,
+      u_useSoftShadows);
 }
 `;
 
