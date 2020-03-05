@@ -52,7 +52,7 @@ function createScene(gl) {
   const scene = {};
 
   scene.camera = setupCamera(gl);
-  scene.light = setupLight(gl);
+  scene.lights = setupLights(gl);
   scene.textures = createTextures(gl);
   scene.shadowMap = setupShadowMap(gl);
   scene.hud = setupHUD(scene);
@@ -126,11 +126,15 @@ function setupCamera(gl) {
   return new Camera(gl, position, target, up, fovDegrees);
 }
 
-function setupLight(gl) {
-  const position = window.lightPosition;
-  const target = window.lightTarget;
-  const color = new Vector3([1, 1, 1]);
-  return new PointLight(gl, position, target, color);
+function setupLights(gl) {
+  const lights = [];
+  {
+    const position = window.lightPosition;
+    const target = window.lightTarget;
+    const color = new Vector3([1, 1, 1]);
+    lights.push(new PointLight(gl, position, target, color));
+  }
+  return lights;
 }
 
 function setupHUD(scene) {
@@ -239,21 +243,21 @@ function setupShadowMap(gl) {
 function drawFrame(gl, programInfos, scene, timestamp) {
   scene.camera.target = window.cameraTarget;
   scene.camera.position = window.cameraPosition;
-  scene.light.position = window.lightPosition;
-  scene.light.target = window.lightTarget;
+  scene.lights[0].position = window.lightPosition;
+  scene.lights[0].target = window.lightTarget;
 
   // Draw to texture
   gl.bindFramebuffer(gl.FRAMEBUFFER, scene.shadowMap.framebuffer);
   gl.viewport(0, 0, scene.shadowMap.bufferSize, scene.shadowMap.bufferSize);
   drawScene(
-      gl, programInfos.depth, scene, scene.light, new Matrix4(), timestamp);
+      gl, programInfos.depth, scene, scene.lights[0], new Matrix4(), timestamp);
 
   // Draw to canvas
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
   drawScene(
       gl, programInfos.render, scene, scene.camera,
-      scene.light.getViewProjectionMatrix(), timestamp);
+      scene.lights[0].getViewProjectionMatrix(), timestamp);
   drawHUD(gl, programInfos.render, scene);
 
   requestAnimationFrame(function(timestamp) {
@@ -272,10 +276,11 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   const globalUniforms = {
-    u_lightColor: scene.light.color,
-    u_lightPos: scene.light.position,
-    u_lightDir:
-        new Vector3().copy(scene.light.target).subtract(scene.light.position),
+    u_lightColor: scene.lights[0].color,
+    u_lightPos: scene.lights[0].position,
+    u_lightDir: new Vector3()
+                    .copy(scene.lights[0].target)
+                    .subtract(scene.lights[0].position),
     u_cameraPos: renderCamera.position,
     u_viewMatrix: renderCamera.viewMatrix,
     u_projectionMatrix: renderCamera.projMatrix,
