@@ -88,21 +88,18 @@ vec3 phongFrag() {
   }
 
   // Diffuse
-  vec3 diffuse = u_lightColor * dot(L, N) * u_diffuseColor;
+  vec3 diffuse = u_lightColor * max(dot(L, N), 0.0) * u_diffuseColor;
 
   // Specular
   float specularStrength = 1.0;
-  vec3 specular = vec3(0);
-  if (dot(R, V) > 0.0) {
-    specular = specularStrength * pow(dot(R, V), u_shininess) * u_lightColor * u_specularColor;
-  }
+  vec3 specular = u_lightColor * u_specularColor;
+  specular *= specularStrength * pow(max(dot(R, V), 0.0), u_shininess);
 
   // Ambient
   float ambientStrength = 0.1;
   vec3 ambient = ambientStrength * u_lightColor * u_ambientColor;
 
-  vec3 result = ((specular + diffuse) * visibility + ambient);
-  return result;
+  return (specular + diffuse) * visibility + ambient;
 }
 `;
 

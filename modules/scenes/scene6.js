@@ -117,7 +117,7 @@ function createScene(gl) {
 function setupCamera(gl) {
   const position = new Vector3([0, 2, 10]);
   const target = new Vector3([0, 0, -4]);
-  const up = new Vector3([0, 0, -1]);
+  const up = new Vector3([0, 1, 0]);
   const fovDegrees = 45;
   return new Camera(gl, position, target, up, fovDegrees);
 }
