@@ -133,7 +133,7 @@ vec3 lightContrib(
 
   // Ambient
   float ambientStrength = 0.1;
-  vec3 ambient = ambientStrength * u_lightColor * u_ambientColor;
+  vec3 ambient = ambientStrength * lightColor * u_ambientColor;
   
   return (diffuse + specular) * visibility * spotFactor + ambient;
 }
