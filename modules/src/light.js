@@ -39,7 +39,7 @@ export class PointLight {
       return new Matrix4().perspective(
           {fov: this.fov, aspect: this.aspect, near: this.near, far: this.far});
     } else {
-      const orthoSize = 30;
+      const orthoSize = 20;
       return new Matrix4().ortho({
         left: -orthoSize,
         right: orthoSize,

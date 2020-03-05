@@ -20,9 +20,11 @@ const startTime = performance.now();
 
 window.useSoftShadows = true;
 window.shadowMapBias = 0.002;
-window.cameraPosition = new Vector3([0, 2, 10]);
+// window.cameraPosition = new Vector3([0, 2, 10]);
+window.cameraPosition = new Vector3([0, 20, 50]);
 window.cameraTarget = new Vector3([0, 2, -4]);
-window.lightPosition = new Vector3([30, 20, 10]);
+// window.lightPosition = new Vector3([30, 20, 10]);
+window.lightPosition = new Vector3([0, 20, 10]);
 window.lightTarget = new Vector3([0, 0, -4]);
 
 export default function render() {
@@ -274,6 +276,8 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
   const globalUniforms = {
     u_lightColor: scene.light.color,
     u_lightPos: scene.light.position,
+    u_lightDir:
+        new Vector3().copy(scene.light.target).subtract(scene.light.position),
     u_cameraPos: renderCamera.position,
     u_viewMatrix: renderCamera.viewMatrix,
     u_projectionMatrix: renderCamera.projMatrix,
