@@ -131,21 +131,22 @@ vec3 lightContrib(
   vec3 specular = lightColor * u_specularColor;
   specular *= specularStrength * pow(max(dot(R, V), 0.0), u_shininess);
 
-  // Ambient
-  float ambientStrength = 0.1;
-  vec3 ambient = ambientStrength * lightColor * u_ambientColor;
-  
-  return (diffuse + specular) * visibility * spotFactor + ambient;
+  return (diffuse + specular) * visibility * spotFactor;
 }
 
 vec3 phongFrag() {
-  return lightContrib(
+  float ambientStrength = 0.1;
+  vec3 ambient = ambientStrength * u_lightColor * u_ambientColor;
+
+  vec3 light1 = lightContrib(
       v_lightDir,
       u_lightColor,
       u_shadowMap,
       u_shadowMapSize,
       u_bias,
       u_useSoftShadows);
+
+  return light1 + ambient;
 }
 `;
 
