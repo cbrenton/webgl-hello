@@ -134,6 +134,12 @@ function setupLights(gl) {
     const color = new Vector3([1, 1, 1]);
     lights.push(new PointLight(gl, position, target, color));
   }
+  {
+    const position = new Vector3([10, 10, 0]);
+    const target = new Vector3([10, 0, -4]);
+    const color = new Vector3([0, 1, 0]);
+    lights.push(new PointLight(gl, position, target, color));
+  }
   return lights;
 }
 
