@@ -22,6 +22,7 @@ export class PointLight {
     this.far = 100.0;
 
     this.aspect = 1.0;
+    this.tag = 'light';
   }
 
   get viewMatrix() {

@@ -14,6 +14,7 @@ export class Camera {
         parseFloat(gl.canvas.clientWidth) / parseFloat(gl.canvas.clientHeight);
     this.near = 0.1;
     this.far = 100.0;
+    this.tag = 'camera';
   }
 
   get viewMatrix() {
