@@ -308,17 +308,25 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVPs, timestamp) {
   gl.enable(gl.CULL_FACE);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+  // @TODO: figure out how to pass uniform arrays to shaders
   const globalUniforms = {
     u_lightColor: scene.lights[0].color,
+    u_lightColor2: scene.lights[1].color,
     u_lightPos: scene.lights[0].position,
-    u_lightDir: new Vector3()
-                    .copy(scene.lights[0].target)
-                    .subtract(scene.lights[0].position),
+    u_lightPos2: scene.lights[1].position,
+    u_lightAimDir: new Vector3()
+                       .copy(scene.lights[0].target)
+                       .subtract(scene.lights[0].position),
+    u_lightAimDir2: new Vector3()
+                        .copy(scene.lights[1].target)
+                        .subtract(scene.lights[1].position),
     u_cameraPos: renderCamera.position,
     u_viewMatrix: renderCamera.viewMatrix,
     u_projectionMatrix: renderCamera.projMatrix,
     u_depthVP: lightVPs[0],
+    u_depthVP2: lightVPs[1],
     u_shadowMap: scene.shadowMaps[0].textures.depth,
+    u_shadowMap2: scene.shadowMaps[1].textures.depth,
     u_shadowMapSize: scene.shadowMaps[0].bufferSize,
     u_useSoftShadows: window.useSoftShadows,
     u_bias: window.shadowMapBias,

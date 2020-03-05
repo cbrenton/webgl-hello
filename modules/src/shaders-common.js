@@ -14,14 +14,18 @@ uniform mat4 u_viewMatrix;
 uniform mat4 u_projectionMatrix;
 uniform vec3 u_cameraPos;
 uniform vec3 u_lightPos;
+uniform vec3 u_lightPos2;
 uniform mat4 u_depthVP;
+uniform mat4 u_depthVP2;
 `;
 
 phong.vert.outputs = `
 out vec3 v_normal;
 out vec3 v_viewVec;
 out vec4 v_shadowCoord;
-out vec3 v_lightDir;
+out vec4 v_shadowCoord2;
+out vec3 v_lightToSurf;
+out vec3 v_lightToSurf2;
 `;
 
 phong.vert.phongVert = `
@@ -33,9 +37,11 @@ void phongVert() {
   v_normal = mat3(modelInverseTranspose) * a_normal;
 
   vec3 surfaceWorldPos = vec3(u_modelMatrix * a_position);
-  v_lightDir = u_lightPos - surfaceWorldPos;
+  v_lightToSurf = u_lightPos - surfaceWorldPos;
+  v_lightToSurf2 = u_lightPos2 - surfaceWorldPos;
   v_viewVec = u_cameraPos - surfaceWorldPos;
   v_shadowCoord = u_depthVP * u_modelMatrix * a_position;
+  v_shadowCoord2 = u_depthVP2 * u_modelMatrix * a_position;
 }
 `;
 
@@ -43,16 +49,21 @@ phong.frag.inputs = `
 in vec3 v_normal;
 in vec3 v_viewVec;
 in vec4 v_shadowCoord;
-in vec3 v_lightDir;
+in vec4 v_shadowCoord2;
+in vec3 v_lightToSurf;
+in vec3 v_lightToSurf2;
 
 uniform bool u_useSoftShadows;
 
 uniform sampler2DShadow u_shadowMap;
+uniform sampler2DShadow u_shadowMap2;
 uniform float u_shadowMapSize;
 uniform float u_bias;
 
 uniform vec3 u_lightColor;
-uniform vec3 u_lightDir;
+uniform vec3 u_lightColor2;
+uniform vec3 u_lightAimDir;
+uniform vec3 u_lightAimDir2;
 uniform vec3 u_ambientColor;
 uniform vec3 u_diffuseColor;
 uniform vec3 u_specularColor;
@@ -61,9 +72,9 @@ uniform float u_shininess;
 `;
 
 phong.frag.phongFrag = `
-float getSpotFactor() {
-  vec3 L = normalize(v_lightDir);
-  vec3 D = normalize(u_lightDir);
+float getSpotFactor(vec3 lightAimDir, vec3 lightToSurf) {
+  vec3 L = normalize(lightToSurf);
+  vec3 D = normalize(lightAimDir);
 
   float cosineCutoff = cos(radians(60.0));
   float spotExponent = 5.0;
@@ -78,9 +89,10 @@ float getSpotFactor() {
 float shadowFactor(
     sampler2DShadow shadowMap,
     float shadowMapSize,
+    vec4 shadowCoord,
     float bias,
     bool useSoftShadows) {
-  vec4 shadowMapCoord = v_shadowCoord;
+  vec4 shadowMapCoord = shadowCoord;
   shadowMapCoord.z -= bias;
   float visibility = textureProj(shadowMap, shadowMapCoord);
 
@@ -90,7 +102,7 @@ float shadowFactor(
       for (float x = -1.5; x <= 1.5; x += 1.0) {
         vec2 size = 1.0f / vec2(shadowMapSize);
         vec2 texOffset = vec2(x * size.x, y * size.y);
-        vec4 tmpShadowCoord = v_shadowCoord;
+        vec4 tmpShadowCoord = shadowCoord;
         tmpShadowCoord.xy += texOffset;
         tmpShadowCoord.z -= bias;
         visibility += textureProj(shadowMap, tmpShadowCoord);
@@ -103,13 +115,15 @@ float shadowFactor(
 }
 
 vec3 lightContrib(
-    vec3 lightDir,
+    vec3 lightAimDir,
+    vec3 lightToSurf,
     vec3 lightColor,
     sampler2DShadow shadowMap,
     float shadowMapSize,
+    vec4 shadowCoord,
     float bias,
     bool useSoftShadows) {
-  vec3 L = normalize(lightDir);
+  vec3 L = normalize(lightToSurf);
   vec3 N = normalize(v_normal);
   vec3 V = normalize(v_viewVec);
   vec3 R = -reflect(L, N);
@@ -118,11 +132,12 @@ vec3 lightContrib(
   float visibility = shadowFactor(
       shadowMap,
       shadowMapSize,
+      shadowCoord,
       bias,
       useSoftShadows);
 
   // Spotlight
-  float spotFactor = getSpotFactor();
+  float spotFactor = getSpotFactor(lightAimDir, lightToSurf);
  
   // Diffuse
   vec3 diffuse = lightColor * max(dot(L, N), 0.0) * u_diffuseColor;
@@ -140,14 +155,26 @@ vec3 phongFrag() {
   vec3 ambient = ambientStrength * u_lightColor * u_ambientColor;
 
   vec3 light1 = lightContrib(
-      v_lightDir,
+      u_lightAimDir,
+      v_lightToSurf,
       u_lightColor,
       u_shadowMap,
       u_shadowMapSize,
+      v_shadowCoord,
       u_bias,
       u_useSoftShadows);
 
-  return light1 + u_emissiveColor + ambient;
+  vec3 light2 = lightContrib(
+      u_lightAimDir2,
+      v_lightToSurf2,
+      u_lightColor2,
+      u_shadowMap2,
+      u_shadowMapSize,
+      v_shadowCoord2,
+      u_bias,
+      u_useSoftShadows);
+
+  return light1 + light2 + u_emissiveColor + ambient;
 }
 `;
 
