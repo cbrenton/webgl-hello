@@ -37,9 +37,4 @@ Hello world exercises for WebGL
 - [x] The scene should demonstrate phong lighting (interpolated normals).
 - [x] The scene should have accurate shadows via shadow mapping.
 - [x] The plane should be texture mapped.
-
-## Scene 7 (stretch goal)
-### Create a scene with bunny.obj, a plane, and 2 lights
-- [ ] This scene should have 2 lights.
-- [ ] The scene should have accurate shadows via shadow mapping.
-- [ ] The plane should be texture mapped.
+- [ ] Stretch goal: The scene should have 2 lights.
