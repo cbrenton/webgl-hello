@@ -21,7 +21,7 @@ phong.vert.outputs = `
 out vec3 v_normal;
 out vec3 v_viewVec;
 out vec4 v_shadowCoord;
-out vec3 v_lightPos;
+out vec3 v_lightDir;
 `;
 
 phong.vert.phongVert = `
@@ -33,8 +33,8 @@ void phongVert() {
   v_normal = mat3(modelInverseTranspose) * a_normal;
 
   vec3 surfaceWorldPos = vec3(u_modelMatrix * a_position);
-  v_lightPos = u_lightPos;
-  v_viewVec= u_cameraPos - surfaceWorldPos;
+  v_lightDir = u_lightPos - surfaceWorldPos;
+  v_viewVec = u_cameraPos - surfaceWorldPos;
   v_shadowCoord = u_depthVP * u_modelMatrix * a_position;
 }
 `;
@@ -43,7 +43,7 @@ phong.frag.inputs = `
 in vec3 v_normal;
 in vec3 v_viewVec;
 in vec4 v_shadowCoord;
-in vec3 v_lightPos;
+in vec3 v_lightDir;
 
 uniform bool u_useSoftShadows;
 
@@ -60,7 +60,7 @@ uniform float u_shininess;
 
 phong.frag.phongFrag = `
 vec3 phongFrag() {
-  vec3 L = normalize(v_lightPos);
+  vec3 L = normalize(v_lightDir);
   vec3 N = normalize(v_normal);
   vec3 V = normalize(v_viewVec);
   vec3 R = -reflect(L, N);
