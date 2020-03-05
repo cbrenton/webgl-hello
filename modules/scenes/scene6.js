@@ -132,7 +132,7 @@ function setupHUD(scene) {
     viewMatrix: new Matrix4(),
     projMatrix: new Matrix4().ortho(
         {left: -1, right: 1, bottom: -1, top: 1, near: 0.1, far: 10}),
-    texture: scene.shadowMap.texture,
+    texture: scene.shadowMap.textures.depth,
     transform:
         new Matrix4().translate([0.5, 0.5, 0]).rotateX(util.degToRad(-90)),
   };
@@ -195,7 +195,17 @@ function setupShadowMap(gl) {
   const depthFramebuffer = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
 
-  // Create depth buffer for renderbuffer
+  // Color texture for framebuffer
+  const renderedTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, renderedTexture);
+  gl.texImage2D(
+      gl.TEXTURE_2D, 0, gl.RGB, size, size, 0, gl.RGB, gl.UNSIGNED_BYTE, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.framebufferTexture2D(
+      gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, renderedTexture, 0);
+
+  // Create depth buffer for framebuffer
   const depthTexture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, depthTexture);
   gl.texImage2D(
@@ -208,9 +218,12 @@ function setupShadowMap(gl) {
   gl.framebufferTexture2D(
       gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthTexture, 0);
 
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
   return {
     framebuffer: depthFramebuffer,
-    texture: depthTexture,
+    textures: {depth: depthTexture, color: renderedTexture},
     bufferSize: size,
   };
 }
@@ -252,7 +265,7 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
     u_viewMatrix: renderCamera.viewMatrix,
     u_projectionMatrix: renderCamera.projMatrix,
     u_depthVP: lightVP,
-    u_shadowMap: scene.shadowMap.texture,
+    u_shadowMap: scene.shadowMap.textures.depth,
     u_shadowMapSize: scene.shadowMap.bufferSize,
     u_useSoftShadows: window.useSoftShadows,
   }
@@ -263,7 +276,6 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVP, timestamp) {
                        .copy(scene.sphere.transform)
                        .rotateY(rotationRadians)
                        .translate(new Vector3([0, 0, 4])),
-    u_matColor: scene.sphere.material.color,
     u_diffuseColor: scene.sphere.material.color.diffuse,
     u_specularColor: scene.sphere.material.color.specular,
     u_ambientColor: scene.sphere.material.color.ambient,

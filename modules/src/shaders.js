@@ -287,8 +287,7 @@ float linearize(float depth) {
 }
 
 void main() {
-  float z = texture(u_texture, v_texcoord).r;
-  finalColor = vec4(z, z, z, 1);
+  finalColor = texture(u_texture, v_texcoord);
 }`,
 };
 
@@ -308,10 +307,12 @@ void main() {
   fs: `#version 300 es
 precision mediump float;
 
+uniform vec3 u_diffuseColor;
+
 out vec4 outColor;
 
 void main() {
-  outColor = vec4(gl_FragCoord.z);
+  outColor = vec4(u_diffuseColor, 1);
 }
 `,
 };
