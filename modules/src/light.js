@@ -33,17 +33,17 @@ export class PointLight {
     if (this.isPerspective) {
       this.projMatrix = new Matrix4().perspective(
           {fov: this.fov, aspect: this.aspect, near: this.near, far: this.far});
+    } else {
+      const orthoSize = 30;
+      this.projMatrix = new Matrix4().ortho({
+        left: -orthoSize,
+        right: orthoSize,
+        bottom: -orthoSize,
+        top: orthoSize,
+        near: this.near,
+        far: this.far,
+      });
     }
-
-    const orthoSize = 30;
-    this.projMatrix = new Matrix4().ortho({
-      left: -orthoSize,
-      right: orthoSize,
-      bottom: -orthoSize,
-      top: orthoSize,
-      near: this.near,
-      far: this.far,
-    });
   }
 
   getViewProjectionMatrix() {
