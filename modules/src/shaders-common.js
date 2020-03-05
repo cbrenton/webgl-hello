@@ -64,8 +64,8 @@ float getSpotFactor() {
   vec3 L = normalize(v_lightDir);
   vec3 D = normalize(u_lightDir);
 
-  float cosineCutoff = cos(radians(45.0));
-  float spotExponent = 30.0;
+  float cosineCutoff = cos(radians(60.0));
+  float spotExponent = 5.0;
 
   float spotCosine = dot(D, -L);
   if (spotCosine >= cosineCutoff) {
