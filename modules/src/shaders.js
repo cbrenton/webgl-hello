@@ -1,6 +1,6 @@
 'use strict';
 
-import * as util from '../util/scene-helpers.js';
+import * as util from 'util/scene-helpers.js';
 
 const shaders = {};
 
