@@ -56,6 +56,7 @@ uniform vec3 u_lightDir;
 uniform vec3 u_ambientColor;
 uniform vec3 u_diffuseColor;
 uniform vec3 u_specularColor;
+uniform vec3 u_emissiveColor;
 uniform float u_shininess;
 `;
 
@@ -146,7 +147,7 @@ vec3 phongFrag() {
       u_bias,
       u_useSoftShadows);
 
-  return light1 + ambient;
+  return light1 + u_emissiveColor + ambient;
 }
 `;
 

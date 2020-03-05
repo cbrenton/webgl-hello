@@ -67,6 +67,7 @@ function createScene(gl) {
         diffuse: new Vector3([0.8, 0.2, 0.2]),
         specular: new Vector3([1.0, 1.0, 1.0]),
         ambient: new Vector3([0.6, 0.6, 0.6]),
+        emissive: new Vector3([1.0, 0.2, 0.2]),
       },
       shininess: 32.0,
       texture: scene.textures.blankTexture,
@@ -80,6 +81,7 @@ function createScene(gl) {
         diffuse: new Vector3([0.6, 0.6, 0.6]),
         specular: new Vector3([0.0, 0.0, 0.0]),
         ambient: new Vector3([0.6, 0.6, 0.6]),
+        emissive: new Vector3([0, 0, 0]),
       },
       shininess: 1.0,
       texture: scene.textures.checkerboardTexture,
@@ -93,6 +95,7 @@ function createScene(gl) {
         diffuse: new Vector3([0.2, 0.8, 0.2]),
         specular: new Vector3([0.2, 0.8, 0.2]),
         ambient: new Vector3([0.6, 0.6, 0.6]),
+        emissive: new Vector3([0, 0, 0]),
       },
       shininess: 16.0,
       texture: scene.textures.blankTexture,
@@ -107,6 +110,7 @@ function createScene(gl) {
         diffuse: new Vector3([0.8, 0.8, 0.8]),
         specular: new Vector3([0.8, 0.8, 0.8]),
         ambient: new Vector3([0.8, 0.8, 0.8]),
+        emissive: new Vector3([0, 0, 0]),
       },
       shininess: 16.0,
       texture: scene.textures.blankTexture,
@@ -328,6 +332,7 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVPs, timestamp) {
     u_diffuseColor: scene.sphere.material.color.diffuse,
     u_specularColor: scene.sphere.material.color.specular,
     u_ambientColor: scene.sphere.material.color.ambient,
+    u_emissiveColor: scene.sphere.material.color.emissive,
     u_shininess: scene.sphere.material.shininess,
   };
   util.drawBuffer(
@@ -340,6 +345,7 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVPs, timestamp) {
     u_diffuseColor: scene.cube.material.color.diffuse,
     u_specularColor: scene.cube.material.color.specular,
     u_ambientColor: scene.cube.material.color.ambient,
+    u_emissiveColor: scene.cube.material.color.emissive,
     u_shininess: scene.cube.material.shininess,
   };
   util.drawBuffer(
@@ -353,6 +359,7 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVPs, timestamp) {
     u_diffuseColor: scene.bunny.material.color.diffuse,
     u_specularColor: scene.bunny.material.color.specular,
     u_ambientColor: scene.bunny.material.color.ambient,
+    u_emissiveColor: scene.bunny.material.color.emissive,
     u_texture: scene.bunny.material.texture,
     u_shininess: scene.bunny.material.shininess,
   };
@@ -366,6 +373,7 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVPs, timestamp) {
     u_diffuseColor: scene.plane.material.color.diffuse,
     u_specularColor: scene.plane.material.color.specular,
     u_ambientColor: scene.plane.material.color.ambient,
+    u_emissiveColor: scene.plane.material.color.emissive,
     u_texture: scene.plane.material.texture,
     u_shininess: scene.plane.material.shininess,
   };
