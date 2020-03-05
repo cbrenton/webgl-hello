@@ -1,301 +1,165 @@
 'use strict';
 
 import * as util from 'util/scene-helpers.js';
+import * as define_common from './shaders-common.js';
 
 const shaders = {};
 
-shaders.phong = {
-  vs: `#version 300 es
-in vec4 a_position;
-in vec3 a_normal;
+shaders.phong = {};
+shaders.phong.vs = `#version 300 es
+  ${define_common.phong.vert.inputs}
 
-uniform mat4 u_modelMatrix;
-uniform mat4 u_viewMatrix;
-uniform mat4 u_projectionMatrix;
-uniform vec3 u_cameraPos;
-uniform vec3 u_lightPos;
-uniform mat4 u_depthVP;
+  ${define_common.phong.vert.outputs}
 
-out vec3 v_normal;
-out vec3 v_viewVec;
-out vec4 v_shadowCoord;
-out vec3 v_lightPos;
+  ${define_common.phong.vert.phongVert}
 
-void main() {
-  mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
-  gl_Position = mvp * a_position;
-
-  mat4 modelInverseTranspose = transpose(inverse(u_modelMatrix));
-  v_normal = mat3(modelInverseTranspose) * a_normal;
-
-  vec3 surfaceWorldPos = vec3(u_modelMatrix * a_position);
-  v_lightPos = u_lightPos;
-  v_viewVec= u_cameraPos - surfaceWorldPos;
-  v_shadowCoord = u_depthVP * u_modelMatrix * a_position;
-}`,
-  fs: `#version 300 es
-precision mediump float;
-precision highp sampler2DShadow;
-
-in vec3 v_normal;
-in vec3 v_viewVec;
-in vec4 v_shadowCoord;
-in vec3 v_lightPos;
-
-uniform float u_shadowMapSize;
-uniform float u_shininess;
-uniform float u_bias;
-uniform vec3 u_diffuseColor;
-uniform vec3 u_specularColor;
-uniform vec3 u_ambientColor;
-uniform vec3 u_lightColor;
-uniform sampler2DShadow u_shadowMap;
-uniform bool u_useSoftShadows;
-
-out vec4 finalColor;
-
-void main() {
-  vec3 L = normalize(v_lightPos);
-  vec3 N = normalize(v_normal);
-  vec3 V = normalize(v_viewVec);
-  vec3 R = -reflect(L, N);
-
-  vec4 shadowMapCoord = v_shadowCoord;
-  shadowMapCoord.z -= u_bias;
-
-  float visibility = textureProj(u_shadowMap, shadowMapCoord);
-
-  // @TODO: clean this up
-  if (u_useSoftShadows) {
-    float count = 1.0;
-    for (float y = -1.5; y <= 1.5; y += 1.0) {
-      for (float x = -1.5; x <= 1.5; x += 1.0) {
-        vec2 shadowMapSize = 1.0f / vec2(u_shadowMapSize);
-        vec2 texOffset = vec2(x * shadowMapSize.x, y * shadowMapSize.y);
-        vec4 tmpShadowCoord = v_shadowCoord;
-        tmpShadowCoord.xy += texOffset;
-        tmpShadowCoord.z -= u_bias;
-        visibility += textureProj(u_shadowMap, tmpShadowCoord);
-        count += 1.0;
-      }
-    }
-    visibility /= count;
+  void main() {
+    phongVert();
   }
+`;
+shaders.phong.fs = `#version 300 es
+  precision mediump float;
+  precision highp sampler2DShadow;
 
-  // Diffuse
-  vec3 diffuse = u_lightColor * dot(L, N) * u_diffuseColor;
+  ${define_common.phong.frag.inputs}
 
-  // Specular
-  float specularStrength = 1.0;
-  vec3 specular = vec3(0);
-  if (dot(R, V) > 0.0) {
-    specular = specularStrength * pow(dot(R, V), u_shininess) * u_lightColor * u_specularColor;
+  out vec4 finalColor;
+
+  ${define_common.phong.frag.phongFrag}
+
+  void main() {
+    finalColor = vec4(phongFrag(), 1.0);
   }
+`;
 
-  // Ambient
-  float ambientStrength = 0.1;
-  vec3 ambient = ambientStrength * u_lightColor * u_ambientColor;
+shaders.texturedPhong = {};
+shaders.texturedPhong.vs = `#version 300 es
+  ${define_common.phong.vert.inputs}
+  in vec2 a_texcoord;
 
-  vec3 result = ((specular + diffuse) * visibility + ambient);
-  finalColor = vec4(result, 1.0);
-}`,
-};
+  ${define_common.phong.vert.outputs}
+  out vec2 v_texcoord;
 
-shaders.texturedPhong = {
-  vs: `#version 300 es
-in vec4 a_position;
-in vec3 a_normal;
-in vec2 a_texcoord;
+  ${define_common.phong.vert.phongVert}
 
-uniform mat4 u_modelMatrix;
-uniform mat4 u_viewMatrix;
-uniform mat4 u_projectionMatrix;
-uniform vec3 u_cameraPos;
-uniform vec3 u_lightPos;
-uniform mat4 u_depthVP;
+  void main() {
+    phongVert();
 
-out vec2 v_texcoord;
-out vec3 v_normal;
-out vec3 v_viewVec;
-out vec4 v_shadowCoord;
-out vec3 v_lightPos;
-
-void main() {
-  mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
-  gl_Position = mvp * a_position;
-
-  mat4 modelInverseTranspose = transpose(inverse(u_modelMatrix));
-  v_normal = mat3(modelInverseTranspose) * a_normal;
-
-  vec3 surfaceWorldPos = vec3(u_modelMatrix * a_position);
-  v_lightPos = u_lightPos;
-  v_viewVec= u_cameraPos - surfaceWorldPos;
-  v_shadowCoord = u_depthVP * u_modelMatrix * a_position;
-  v_texcoord = a_texcoord;
-}`,
-  fs: `#version 300 es
-precision mediump float;
-precision highp sampler2DShadow;
-
-in vec2 v_texcoord;
-in vec3 v_normal;
-in vec3 v_viewVec;
-in vec4 v_shadowCoord;
-in vec3 v_lightPos;
-
-uniform float u_shadowMapSize;
-uniform float u_shininess;
-uniform vec3 u_diffuseColor;
-uniform vec3 u_specularColor;
-uniform vec3 u_ambientColor;
-uniform vec3 u_lightColor;
-uniform sampler2D u_texture;
-uniform sampler2DShadow u_shadowMap;
-uniform bool u_useSoftShadows;
-uniform float u_bias;
-
-out vec4 finalColor;
-
-void main() {
-  vec3 L = normalize(v_lightPos);
-  vec3 N = normalize(v_normal);
-  vec3 V = normalize(v_viewVec);
-  vec3 R = -reflect(L, N);
-
-  vec4 shadowMapCoord = v_shadowCoord;
-  shadowMapCoord.z -= u_bias;
-
-  float visibility = textureProj(u_shadowMap, shadowMapCoord);
-
-  // @TODO: clean this up
-  if (u_useSoftShadows) {
-    float count = 1.0;
-    for (float y = -1.5; y <= 1.5; y += 1.0) {
-      for (float x = -1.5; x <= 1.5; x += 1.0) {
-        vec2 shadowMapSize = 1.0f / vec2(u_shadowMapSize);
-        vec2 texOffset = vec2(x * shadowMapSize.x, y * shadowMapSize.y);
-        vec4 tmpShadowCoord = v_shadowCoord;
-        tmpShadowCoord.xy += texOffset;
-        tmpShadowCoord.z -= u_bias;
-        visibility += textureProj(u_shadowMap, tmpShadowCoord);
-        count += 1.0;
-      }
-    }
-    visibility /= count;
+    v_texcoord = a_texcoord;
   }
+`;
+shaders.texturedPhong.fs = `#version 300 es
+  precision mediump float;
+  precision highp sampler2DShadow;
 
-  // Diffuse
-  vec3 diffuse = u_lightColor * dot(L, N) * u_diffuseColor;
+  ${define_common.phong.frag.inputs}
+  in vec2 v_texcoord;
 
-  // Specular
-  float specularStrength = 1.0;
-  vec3 specular = vec3(0);
-  if (dot(R, V) > 0.0) {
-    specular = specularStrength * pow(dot(R, V), u_shininess) * u_lightColor * u_specularColor;
+  uniform sampler2D u_texture;
+
+  out vec4 finalColor;
+
+  ${define_common.phong.frag.phongFrag}
+
+  void main() {
+    vec3 result = phongFrag() * texture(u_texture, v_texcoord).xyz;
+    finalColor = vec4(result, 1.0);
   }
+`;
 
-  // Ambient
-  float ambientStrength = 0.1;
-  vec3 ambient = ambientStrength * u_lightColor * u_ambientColor;
+shaders.flatTexture = {};
+shaders.flatTexture.vs = `#version 300 es
+  in vec4 a_position;
+  in vec2 a_texcoord;
 
-  vec3 texColor = texture(u_texture, v_texcoord).xyz;
-  vec3 result = ((specular + diffuse) * visibility + ambient) * texColor;
-  finalColor = vec4(result, 1.0);
-}`,
-};
+  uniform mat4 u_modelMatrix;
+  uniform mat4 u_viewMatrix;
+  uniform mat4 u_projectionMatrix;
 
-shaders.flatTexture = {
-  vs: `#version 300 es
-in vec4 a_position;
-in vec2 a_texcoord;
+  out vec2 v_texcoord;
 
-uniform mat4 u_modelMatrix;
-uniform mat4 u_viewMatrix;
-uniform mat4 u_projectionMatrix;
+  void main() {
+    mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
 
-out vec2 v_texcoord;
+    gl_Position = mvp * a_position;
 
-void main() {
-  mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
+    v_texcoord = a_texcoord;
+  }
+`;
+shaders.flatTexture.fs = `#version 300 es
+  precision mediump float;
 
-  gl_Position = mvp * a_position;
+  in vec2 v_texcoord;
 
-  v_texcoord = a_texcoord;
-}`,
-  fs: `#version 300 es
-precision mediump float;
+  uniform vec3 u_matColor;
+  uniform sampler2D u_texture;
 
-in vec2 v_texcoord;
+  out vec4 finalColor;
 
-uniform vec3 u_matColor;
-uniform sampler2D u_texture;
+  void main() {
+    finalColor = texture(u_texture, v_texcoord) * vec4(u_matColor, 1);
+  }
+`;
 
-out vec4 finalColor;
+shaders.hud = {};
+shaders.hud.vs = `#version 300 es
+  in vec4 a_position;
+  in vec2 a_texcoord;
 
-void main() {
-  finalColor = texture(u_texture, v_texcoord) * vec4(u_matColor, 1);
-}`,
-};
+  uniform mat4 u_modelMatrix;
+  uniform mat4 u_viewMatrix;
+  uniform mat4 u_projectionMatrix;
 
-shaders.hud = {
-  vs: `#version 300 es
-in vec4 a_position;
-in vec2 a_texcoord;
+  out vec2 v_texcoord;
 
-uniform mat4 u_modelMatrix;
-uniform mat4 u_viewMatrix;
-uniform mat4 u_projectionMatrix;
+  void main() {
+    mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
 
-out vec2 v_texcoord;
+    gl_Position = mvp * a_position;
 
-void main() {
-  mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
+    gl_Position.z = 0.0;
 
-  gl_Position = mvp * a_position;
+    v_texcoord = a_texcoord;
+  }
+`;
+shaders.hud.fs = `#version 300 es
+  precision mediump float;
 
-  gl_Position.z = 0.0;
+  in vec2 v_texcoord;
 
-  v_texcoord = a_texcoord;
-}`,
-  fs: `#version 300 es
-precision mediump float;
+  uniform sampler2D u_texture;
 
-in vec2 v_texcoord;
+  out vec4 finalColor;
 
-uniform sampler2D u_texture;
+  void main() {
+    finalColor = texture(u_texture, v_texcoord);
+  }
+`;
 
-out vec4 finalColor;
+shaders.simpleColor = {};
+shaders.simpleColor.vs = `#version 300 es
+  in vec4 a_position;
 
-void main() {
-  finalColor = texture(u_texture, v_texcoord);
-}`,
-};
+  uniform mat4 u_modelMatrix;
+  uniform mat4 u_viewMatrix;
+  uniform mat4 u_projectionMatrix;
 
-shaders.simpleColor = {
-  vs: `#version 300 es
-in vec4 a_position;
+  void main() {
+    mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
+    gl_Position = mvp * a_position;
+  }
+`;
+shaders.simpleColor.fs = `#version 300 es
+  precision mediump float;
 
-uniform mat4 u_modelMatrix;
-uniform mat4 u_viewMatrix;
-uniform mat4 u_projectionMatrix;
+  uniform vec3 u_diffuseColor;
 
-void main() {
-  mat4 mvp = u_projectionMatrix * u_viewMatrix * u_modelMatrix;
-  gl_Position = mvp * a_position;
-}
-`,
-  fs: `#version 300 es
-precision mediump float;
+  out vec4 outColor;
 
-uniform vec3 u_diffuseColor;
-
-out vec4 outColor;
-
-void main() {
-  outColor = vec4(u_diffuseColor, 1);
-}
-`,
-};
+  void main() {
+    outColor = vec4(u_diffuseColor, 1);
+  }
+`;
 
 function loadShaders(gl, shaderList) {
   const result = {
