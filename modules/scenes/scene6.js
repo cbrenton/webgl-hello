@@ -22,7 +22,7 @@ window.useSoftShadows = true;
 window.shadowMapBias = 0.002;
 window.cameraPosition = new Vector3([0, 20, 50]);
 window.cameraTarget = new Vector3([0, 2, -4]);
-window.lightPosition = new Vector3([0, 10, 5]);
+window.lightPosition = new Vector3([-10, 20, 5]);
 window.lightTarget = new Vector3([0, 0, -4]);
 window.showLights = false;
 window.hudTex = 0;
@@ -142,7 +142,7 @@ function setupLights(gl) {
     lights.push(new PointLight(gl, position, target, color));
   }
   {
-    const position = new Vector3([5, 10, -10]);
+    const position = new Vector3([15, 20, -10]);
     const target = new Vector3([-5, 0, -5]);
     const color = new Vector3([0, 1, 0]);
     lights.push(new PointLight(gl, position, target, color));

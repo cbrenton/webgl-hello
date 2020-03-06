@@ -15,7 +15,7 @@ export class PointLight {
       this.up = new Vector3([0, 0, 1]);
     }
     this.color = color;
-    this.isPerspective = false;
+    this.isPerspective = true;
 
     this.fov = degToRad(90);
     this.near = 0.1;
