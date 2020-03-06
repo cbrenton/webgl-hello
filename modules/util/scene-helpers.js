@@ -12,16 +12,25 @@ export function createCanvas(id, description, isDebug) {
   const el = document.createElement('div');
   el.setAttribute('class', 'canvasContainer');
 
+  const canvasesHolder = document.createElement('div');
+  canvasesHolder.setAttribute('class', 'canvases');
+
   const canvas = document.createElement('canvas');
   canvas.setAttribute('class', 'inner');
   canvas.setAttribute('id', `c${id}`);
+
+  const textCanvas = document.createElement('canvas');
+  textCanvas.setAttribute('class', 'overlay');
+  textCanvas.setAttribute('id', `overlay${id}`);
 
   const label = document.createElement('span');
   label.innerHTML = description;
   label.setAttribute('class', 'inner');
 
-  el.appendChild(canvas);
-  el.appendChild(label);
+  el.appendChild(canvasesHolder);
+  canvasesHolder.appendChild(canvas);
+  canvasesHolder.appendChild(textCanvas);
+  canvasesHolder.appendChild(label);
   container.appendChild(el);
   document.body.appendChild(container);
   resizeCanvasToMatchDisplaySize(canvas);
@@ -35,6 +44,10 @@ export function createGLCanvas(id, isDebug) {
   const canvas = createCanvas(id, isDebug);
   const gl = initGL(canvas, id);
   return gl;
+}
+
+export function getOverlayCanvas(id) {
+  return document.getElementById(`overlay${id}`);
 }
 
 export function createShaders(gl, shaders) {
