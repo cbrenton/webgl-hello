@@ -44,6 +44,6 @@ function drawFPS(textContext, renderTime) {
       0, 0, textContext.canvas.width, textContext.canvas.height);
   const yOffset = textContext.canvas.clientHeight - 10;
   textContext.fillText(
-      `render time: ${parseInt(renderTime)} ms, fps: ${parseInt(fps)}`, 10,
+      `render time: ${renderTime.toFixed(2)} ms, fps: ${parseInt(fps)}`, 10,
       yOffset);
 }
