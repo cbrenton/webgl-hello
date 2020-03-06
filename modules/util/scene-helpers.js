@@ -46,8 +46,9 @@ export function createGLCanvas(id, isDebug) {
   return gl;
 }
 
-export function getOverlayCanvas(id) {
-  return document.getElementById(`overlay${id}`);
+export function getOverlayContext(id) {
+  const overlay = document.getElementById(`overlay${id}`);
+  return overlay.getContext('2d');
 }
 
 export function createShaders(gl, shaders) {

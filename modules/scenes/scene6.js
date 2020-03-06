@@ -9,6 +9,7 @@ import {PointLight} from 'src/light.js';
 import {loadShaders} from 'src/shaders.js';
 import {parseObj} from 'util/obj-parser.js';
 import * as util from 'util/scene-helpers.js';
+import {logFrame} from 'util/fps-counter.js';
 
 const sceneId = '6';
 const description = `
@@ -30,6 +31,7 @@ window.freeze = false;
 
 export default function render() {
   const gl = util.createGLCanvas(sceneId, description);
+  const overlayContext = util.getOverlayContext(sceneId);
   const shaderList = [
     'phong',
     'texturedPhong',
@@ -38,7 +40,7 @@ export default function render() {
   const programInfos = loadShaders(gl, shaderList);
 
   const scene = createScene(gl);
-  drawFrame(gl, programInfos, scene, performance.now());
+  drawFrame(overlayContext, gl, programInfos, scene, performance.now());
 }
 
 function createScene(gl) {
@@ -264,7 +266,9 @@ function setupShadowMaps(gl, lights) {
   return shadowMaps;
 }
 
-function drawFrame(gl, programInfos, scene, timestamp) {
+function drawFrame(overlayContext, gl, programInfos, scene, timestamp) {
+  logFrame(overlayContext);
+
   scene.camera.target = window.cameraTarget;
   scene.camera.position = window.cameraPosition;
   scene.lights[0].position = window.lightPosition;
@@ -291,7 +295,7 @@ function drawFrame(gl, programInfos, scene, timestamp) {
   drawHUD(gl, programInfos.render, scene);
 
   requestAnimationFrame(function(timestamp) {
-    drawFrame(gl, programInfos, scene, timestamp);
+    drawFrame(overlayContext, gl, programInfos, scene, timestamp);
   });
 }
 
