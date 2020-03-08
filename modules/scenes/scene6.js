@@ -21,6 +21,7 @@ const startTime = performance.now();
 
 window.useSoftShadows = true;
 window.shadowMapBias = 0.002;
+window.useBlinnPhong = false;
 window.cameraPosition = new Vector3([0, 20, 50]);
 window.cameraTarget = new Vector3([0, 2, -4]);
 window.lightPosition = new Vector3([-10, 20, 5]);
@@ -334,6 +335,7 @@ function drawScene(gl, programInfos, scene, renderCamera, lightVPs, timestamp) {
     u_shadowMapSize: scene.shadowMaps[0].bufferSize,
     u_useSoftShadows: window.useSoftShadows,
     u_bias: window.shadowMapBias,
+    u_useBlinnPhong: window.useBlinnPhong,
   };
 
   // Render fake lights

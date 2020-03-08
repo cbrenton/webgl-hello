@@ -54,6 +54,7 @@ in vec3 v_lightToSurf;
 in vec3 v_lightToSurf2;
 
 uniform bool u_useSoftShadows;
+uniform bool u_useBlinnPhong;
 
 uniform sampler2DShadow u_shadowMap;
 uniform sampler2DShadow u_shadowMap2;
@@ -126,7 +127,6 @@ vec3 lightContrib(
   vec3 L = normalize(lightToSurf);
   vec3 N = normalize(v_normal);
   vec3 V = normalize(v_viewVec);
-  vec3 R = -reflect(L, N);
 
   // Shadows
   float visibility = shadowFactor(
@@ -145,7 +145,14 @@ vec3 lightContrib(
   // Specular
   float specularStrength = 1.0;
   vec3 specular = lightColor * u_specularColor;
-  specular *= specularStrength * pow(max(dot(R, V), 0.0), u_shininess);
+
+  if (u_useBlinnPhong) {
+    vec3 H = normalize(V + L);
+    specular *= specularStrength * pow(max(dot(H, N), 0.0), u_shininess * 2.0);
+  } else {
+    vec3 R = -reflect(L, N);
+    specular *= specularStrength * pow(max(dot(R, V), 0.0), u_shininess);
+  }
 
   return (diffuse + specular) * visibility * spotFactor;
 }
